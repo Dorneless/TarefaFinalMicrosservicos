@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { eventsService } from "@/lib/api";
 import { Event } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,41 +11,38 @@ import { Calendar, MapPin, Users } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
-    const [events, setEvents] = useState<Event[]>([]);
-    const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
     const [search, setSearch] = useState("");
-    const [loading, setLoading] = useState(true);
+    const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+
+    const { data: events = [], isLoading: loading, isError } = useQuery({
+        queryKey: ["events"],
+        queryFn: async () => {
+            const response = await eventsService.get<Event[]>("/events");
+            return response.data;
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
 
     useEffect(() => {
-        fetchEvents();
-    }, []);
+        if (isError) {
+            toast.error("Falha ao carregar eventos. Verifique sua conexão.");
+        }
+    }, [isError]);
 
     useEffect(() => {
         const lowerSearch = search.toLowerCase();
         const filtered = events.filter(
             (event) =>
-                event.title.toLowerCase().includes(lowerSearch) ||
+                event.name.toLowerCase().includes(lowerSearch) ||
                 event.description.toLowerCase().includes(lowerSearch) ||
                 event.location.toLowerCase().includes(lowerSearch)
         );
         setFilteredEvents(filtered);
     }, [search, events]);
-
-    const fetchEvents = async () => {
-        try {
-            const response = await eventsService.get<Event[]>("/events");
-            setEvents(response.data);
-            setFilteredEvents(response.data);
-        } catch (error) {
-            console.error("Failed to fetch events:", error);
-            toast.error("Failed to load events. Please try again later.");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -54,18 +52,20 @@ export default function DashboardPage() {
         );
     }
 
+
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Events</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Eventos</h1>
                     <p className="text-muted-foreground">
-                        Discover and register for upcoming events.
+                        Descubra e inscreva-se nos próximos eventos.
                     </p>
                 </div>
                 <div className="w-full md:w-72">
                     <Input
-                        placeholder="Search events..."
+                        placeholder="Buscar eventos..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -74,7 +74,7 @@ export default function DashboardPage() {
 
             {filteredEvents.length === 0 ? (
                 <div className="text-center py-12">
-                    <p className="text-muted-foreground text-lg">No events found.</p>
+                    <p className="text-muted-foreground text-lg">Nenhum evento encontrado.</p>
                 </div>
             ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -82,8 +82,8 @@ export default function DashboardPage() {
                         <Card key={event.id} className="flex flex-col h-full hover:shadow-lg transition-shadow duration-300">
                             <CardHeader>
                                 <div className="flex justify-between items-start">
-                                    <CardTitle className="line-clamp-1">{event.title}</CardTitle>
-                                    {event.active ? <Badge variant="default">Active</Badge> : <Badge variant="secondary">Inactive</Badge>}
+                                    <CardTitle className="line-clamp-1">{event.name}</CardTitle>
+                                    {event.active ? <Badge variant="default">Ativo</Badge> : <Badge variant="secondary">Inativo</Badge>}
                                 </div>
                                 <CardDescription className="line-clamp-2">
                                     {event.description}
@@ -92,7 +92,7 @@ export default function DashboardPage() {
                             <CardContent className="flex-1 space-y-2">
                                 <div className="flex items-center text-sm text-muted-foreground">
                                     <Calendar className="mr-2 h-4 w-4" />
-                                    {format(new Date(event.date), "PPP p")}
+                                    {format(new Date(event.eventDate), "PPP p", { locale: ptBR })}
                                 </div>
                                 <div className="flex items-center text-sm text-muted-foreground">
                                     <MapPin className="mr-2 h-4 w-4" />
@@ -100,12 +100,12 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="flex items-center text-sm text-muted-foreground">
                                     <Users className="mr-2 h-4 w-4" />
-                                    Max Participants: {event.maxParticipants}
+                                    Vagas: {event.maxCapacity}
                                 </div>
                             </CardContent>
                             <CardFooter>
                                 <Button asChild className="w-full">
-                                    <Link href={`/events/${event.id}`}>View Details</Link>
+                                    <Link href={`/events/${event.id}`}>Ver Detalhes</Link>
                                 </Button>
                             </CardFooter>
                         </Card>

@@ -21,9 +21,9 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 const formSchema = z.object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-    email: z.string().email({ message: "Invalid email address" }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+    name: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }),
+    email: z.string().email({ message: "Endereço de email inválido" }),
+    password: z.string().min(6, { message: "Senha deve ter pelo menos 6 caracteres" }),
 });
 
 export default function RegisterPage() {
@@ -42,20 +42,13 @@ export default function RegisterPage() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true);
         try {
-            // Direct call to user service or via our API proxy if we had one.
-            // Since we are client side, we can call localhost:8080 directly if CORS allows.
-            // Or we should use a Next.js API route to proxy.
-            // For now, assuming localhost:8080 allows CORS or we are in dev.
-            // Actually, the user service has app.enableCors() in main.ts?
-            // Let's check user-service main.ts later. Assuming yes.
-
             await axios.post("http://localhost:8080/api/auth/register", values);
 
-            toast.success("Registration successful! Please login.");
+            toast.success("Cadastro realizado com sucesso! Por favor, faça login.");
             router.push("/login");
         } catch (error: any) {
             console.error(error);
-            const msg = error.response?.data?.message || "Registration failed. Please try again.";
+            const msg = error.response?.data?.message || "Falha no cadastro. Tente novamente.";
             toast.error(msg);
         } finally {
             setIsLoading(false);
@@ -66,8 +59,8 @@ export default function RegisterPage() {
         <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>Register</CardTitle>
-                    <CardDescription>Create a new account</CardDescription>
+                    <CardTitle>Cadastrar</CardTitle>
+                    <CardDescription>Crie uma nova conta</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
@@ -77,9 +70,9 @@ export default function RegisterPage() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Name</FormLabel>
+                                        <FormLabel>Nome</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="John Doe" {...field} />
+                                            <Input placeholder="João Silva" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -92,7 +85,7 @@ export default function RegisterPage() {
                                     <FormItem>
                                         <FormLabel>Email</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="email@example.com" {...field} />
+                                            <Input placeholder="email@exemplo.com" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -103,7 +96,7 @@ export default function RegisterPage() {
                                 name="password"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Password</FormLabel>
+                                        <FormLabel>Senha</FormLabel>
                                         <FormControl>
                                             <Input type="password" placeholder="******" {...field} />
                                         </FormControl>
@@ -112,16 +105,16 @@ export default function RegisterPage() {
                                 )}
                             />
                             <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading ? "Registering..." : "Register"}
+                                {isLoading ? "Cadastrando..." : "Cadastrar"}
                             </Button>
                         </form>
                     </Form>
                 </CardContent>
                 <CardFooter className="flex justify-center">
                     <p className="text-sm text-gray-500">
-                        Already have an account?{" "}
+                        Já tem uma conta?{" "}
                         <Link href="/login" className="text-blue-500 hover:underline">
-                            Login
+                            Entrar
                         </Link>
                     </p>
                 </CardFooter>

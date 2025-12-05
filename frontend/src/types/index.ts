@@ -5,6 +5,8 @@ export interface User {
     role: 'USER' | 'ADMIN';
     active: boolean;
     accessToken?: string;
+    phone?: string;
+    document?: string;
 }
 
 export interface AuthResponse {
@@ -15,11 +17,11 @@ export interface AuthResponse {
 
 export interface Event {
     id: string;
-    title: string;
+    name: string;
     description: string;
-    date: string;
+    eventDate: string;
     location: string;
-    maxParticipants: number;
+    maxCapacity: number;
     active: boolean;
     createdAt: string;
     updatedAt: string;
@@ -41,10 +43,15 @@ export interface EventRegistration {
 export interface Certificate {
     id: string;
     code: string;
+    userId: string;
     userEmail: string;
+    userName: string;
     eventId: string;
-    issueDate: string;
-    pdfUrl: string;
+    eventName: string;
+    eventDate: string;
+    issuedAt: string;
+    pdfPath: string;
+    active: boolean;
 }
 
 export interface LoginRequest {

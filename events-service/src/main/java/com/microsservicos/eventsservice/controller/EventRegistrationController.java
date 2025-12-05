@@ -102,4 +102,18 @@ public class EventRegistrationController {
         registrationService.cancelRegistrationByAdmin(registrationId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/events/{eventId}/register-by-email")
+    @PreAuthorize("hasRole('ADMIN')")
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(summary = "Admin inscrever usuário por email (cria usuário se não existir)")
+    public ResponseEntity<EventRegistrationResponseDTO> adminRegisterUserByEmail(
+            @PathVariable UUID eventId,
+            @Valid @RequestBody com.microsservicos.eventsservice.dto.RegisterUserByEmailDTO request,
+            Authentication authentication) {
+        String adminEmail = authentication.getName();
+        EventRegistrationResponseDTO response = registrationService.registerUserByEmail(
+                eventId, request.getEmail(), adminEmail);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
 }

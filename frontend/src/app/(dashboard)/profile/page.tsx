@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,51 +21,52 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "sonner";
 
 const formSchema = z.object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-    email: z.string().email({ message: "Invalid email address" }),
+    name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres" }),
+    email: z.string().email({ message: "Endereço de e-mail inválido" }),
+    phone: z.string().optional(),
+    document: z.string().optional(),
 });
 
 export default function ProfilePage() {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const { data: user, isLoading: loading } = useQuery({
+        queryKey: ["user-profile"],
+        queryFn: async () => {
+            const response = await userService.get<User>("/users/me");
+            return response.data;
+        },
+    });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: "",
             email: "",
+            phone: "",
+            document: "",
         },
     });
 
-    useEffect(() => {
-        fetchUser();
-    }, []);
+    const [saving, setSaving] = useState(false);
 
-    const fetchUser = async () => {
-        try {
-            const response = await userService.get<User>("/users/me");
-            setUser(response.data);
+    useEffect(() => {
+        if (user) {
             form.reset({
-                name: response.data.name,
-                email: response.data.email,
+                name: user.name,
+                email: user.email,
+                phone: user.phone || "",
+                document: user.document || "",
             });
-        } catch (error) {
-            console.error("Failed to fetch user:", error);
-            toast.error("Failed to load profile.");
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [user, form]);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setSaving(true);
         try {
             await userService.put("/users/me", values);
-            toast.success("Profile updated successfully!");
+            toast.success("Perfil atualizado com sucesso!");
         } catch (error: any) {
             console.error("Update failed:", error);
-            const msg = error.response?.data?.message || "Failed to update profile.";
+            const msg = error.response?.data?.message || "Falha ao atualizar perfil.";
             toast.error(msg);
         } finally {
             setSaving(false);
@@ -83,8 +85,8 @@ export default function ProfilePage() {
         <div className="max-w-2xl mx-auto">
             <Card>
                 <CardHeader>
-                    <CardTitle>Profile</CardTitle>
-                    <CardDescription>Manage your personal information</CardDescription>
+                    <CardTitle>Perfil</CardTitle>
+                    <CardDescription>Gerencie suas informações pessoais</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
@@ -94,9 +96,9 @@ export default function ProfilePage() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Name</FormLabel>
+                                        <FormLabel>Nome</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="John Doe" {...field} />
+                                            <Input placeholder="João Silva" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -107,16 +109,42 @@ export default function ProfilePage() {
                                 name="email"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Email</FormLabel>
+                                        <FormLabel>E-mail</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="email@example.com" {...field} />
+                                            <Input placeholder="email@exemplo.com" {...field} disabled />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Telefone</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="+55 11 99999-9999" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="document"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Documento</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="123.456.789-00" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
                             <Button type="submit" disabled={saving}>
-                                {saving ? "Saving..." : "Save Changes"}
+                                {saving ? "Salvando..." : "Salvar Alterações"}
                             </Button>
                         </form>
                     </Form>

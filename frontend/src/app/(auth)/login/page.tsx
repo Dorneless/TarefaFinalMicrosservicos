@@ -20,15 +20,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "sonner";
 import Link from "next/link";
 import axios from "axios";
+import { useQueryClient } from "@tanstack/react-query";
+import { persister } from "@/lib/react-query";
 
 const formSchema = z.object({
-    email: z.string().email({ message: "Invalid email address" }),
+    email: z.string().email({ message: "Endereço de email inválido" }),
     password: z.string().optional(),
     code: z.string().optional(),
 });
 
 export default function LoginPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [isLoading, setIsLoading] = useState(false);
     const [loginMode, setLoginMode] = useState<"password" | "code">("password");
 
@@ -44,7 +47,7 @@ export default function LoginPage() {
     async function onRequestCode() {
         const email = form.getValues("email");
         if (!email) {
-            form.setError("email", { message: "Email is required to request a code" });
+            form.setError("email", { message: "Email é obrigatório para solicitar o código" });
             return;
         }
 
@@ -52,18 +55,18 @@ export default function LoginPage() {
         const emailSchema = z.string().email();
         const result = emailSchema.safeParse(email);
         if (!result.success) {
-            form.setError("email", { message: "Invalid email address" });
+            form.setError("email", { message: "Endereço de email inválido" });
             return;
         }
 
         setIsLoading(true);
         try {
             await axios.post("http://localhost:8080/api/auth/request-code", { email });
-            toast.success("Verification code sent to your email!");
+            toast.success("Código de verificação enviado para seu email!");
             setLoginMode("code");
         } catch (error) {
             console.error("Failed to request code:", error);
-            toast.error("Failed to send verification code. Please try again.");
+            toast.error("Falha ao enviar código de verificação. Tente novamente.");
         } finally {
             setIsLoading(false);
         }
@@ -71,11 +74,16 @@ export default function LoginPage() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true);
+
+        // Clear cache before login to ensure fresh state
+        await persister.removeClient();
+        queryClient.removeQueries();
+
         try {
             let result;
             if (loginMode === "password") {
                 if (!values.password) {
-                    form.setError("password", { message: "Password is required" });
+                    form.setError("password", { message: "Senha é obrigatória" });
                     setIsLoading(false);
                     return;
                 }
@@ -86,7 +94,7 @@ export default function LoginPage() {
                 });
             } else {
                 if (!values.code) {
-                    form.setError("code", { message: "Code is required" });
+                    form.setError("code", { message: "Código é obrigatório" });
                     setIsLoading(false);
                     return;
                 }
@@ -98,13 +106,13 @@ export default function LoginPage() {
             }
 
             if (result?.error) {
-                toast.error("Login failed. Please check your credentials.");
+                toast.error("Login falhou. Verifique suas credenciais.");
             } else {
-                toast.success("Login successful!");
+                toast.success("Login realizado com sucesso!");
                 router.push("/");
             }
         } catch (error) {
-            toast.error("An error occurred. Please try again.");
+            toast.error("Ocorreu um erro. Tente novamente.");
         } finally {
             setIsLoading(false);
         }
@@ -114,8 +122,8 @@ export default function LoginPage() {
         <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>Login</CardTitle>
-                    <CardDescription>Enter your credentials to access your account</CardDescription>
+                    <CardTitle>Entrar</CardTitle>
+                    <CardDescription>Insira suas credenciais para acessar sua conta</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex space-x-2 mb-4">
@@ -125,7 +133,7 @@ export default function LoginPage() {
                             className="flex-1"
                             onClick={() => setLoginMode("password")}
                         >
-                            Password
+                            Senha
                         </Button>
                         <Button
                             type="button"
@@ -133,7 +141,7 @@ export default function LoginPage() {
                             className="flex-1"
                             onClick={() => setLoginMode("code")}
                         >
-                            One-Time Code
+                            Código de Acesso
                         </Button>
                     </div>
 
@@ -146,7 +154,7 @@ export default function LoginPage() {
                                     <FormItem>
                                         <FormLabel>Email</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="email@example.com" {...field} />
+                                            <Input placeholder="email@exemplo.com" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -159,7 +167,7 @@ export default function LoginPage() {
                                     name="password"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Password</FormLabel>
+                                            <FormLabel>Senha</FormLabel>
                                             <FormControl>
                                                 <Input type="password" placeholder="******" {...field} />
                                             </FormControl>
@@ -174,7 +182,7 @@ export default function LoginPage() {
                                         name="code"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Verification Code</FormLabel>
+                                                <FormLabel>Código de Verificação</FormLabel>
                                                 <div className="flex space-x-2">
                                                     <FormControl>
                                                         <Input placeholder="123456" {...field} />
@@ -185,7 +193,7 @@ export default function LoginPage() {
                                                         onClick={onRequestCode}
                                                         disabled={isLoading}
                                                     >
-                                                        Send Code
+                                                        Enviar Código
                                                     </Button>
                                                 </div>
                                                 <FormMessage />
@@ -196,16 +204,16 @@ export default function LoginPage() {
                             )}
 
                             <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading ? "Logging in..." : "Login"}
+                                {isLoading ? "Entrando..." : "Entrar"}
                             </Button>
                         </form>
                     </Form>
                 </CardContent>
                 <CardFooter className="flex justify-center">
                     <p className="text-sm text-gray-500">
-                        Don't have an account?{" "}
+                        Não tem uma conta?{" "}
                         <Link href="/register" className="text-blue-500 hover:underline">
-                            Register
+                            Cadastre-se
                         </Link>
                     </p>
                 </CardFooter>

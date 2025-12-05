@@ -30,14 +30,12 @@ export class CertificateService {
         });
 
         if (existingCertificate) {
-            throw new BadRequestException(
-                'Certificado já emitido para este evento e usuário.',
-            );
+            return existingCertificate;
         }
 
         // 2. Verify attendance with events-service (via DB)
         const attendanceCheck = await this.certificateRepository.query(
-            `SELECT er.user_id, er.user_name, er.attended, e.title, e.date
+            `SELECT er.user_id, er.user_name, er.attended, e.name, e.event_date
        FROM events_schema.event_registrations er
        JOIN events_schema.events e ON e.id = er.event_id
        WHERE er.user_email = $1 AND er.event_id = $2`,
@@ -62,8 +60,8 @@ export class CertificateService {
         certificate.userEmail = userEmail;
         certificate.userName = registration.user_name;
         certificate.eventId = dto.eventId;
-        certificate.eventName = registration.title;
-        certificate.eventDate = registration.date;
+        certificate.eventName = registration.name;
+        certificate.eventDate = registration.event_date;
         certificate.code = `CERT-${uuidv4()}`;
 
         // 4. Generate PDF
@@ -90,6 +88,25 @@ export class CertificateService {
         }
 
         return certificate;
+    }
+
+    async getUserCertificates(userEmail: string): Promise<Certificate[]> {
+        return this.certificateRepository.find({
+            where: { userEmail, active: true },
+            order: { issuedAt: 'DESC' },
+        });
+    }
+
+    async downloadCertificate(userEmail: string, code: string): Promise<string> {
+        const certificate = await this.certificateRepository.findOne({
+            where: { code, userEmail, active: true },
+        });
+
+        if (!certificate) {
+            throw new NotFoundException('Certificado não encontrado ou acesso negado.');
+        }
+
+        return certificate.pdfPath;
     }
 
     private async sendNotification(certificate: Certificate) {

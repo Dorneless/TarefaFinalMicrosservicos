@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -30,11 +31,11 @@ import {
 } from "@/components/ui/popover";
 
 const formSchema = z.object({
-    title: z.string().min(2, { message: "Title must be at least 2 characters" }),
-    description: z.string().min(10, { message: "Description must be at least 10 characters" }),
+    title: z.string().min(2, { message: "O título deve ter pelo menos 2 caracteres" }),
+    description: z.string().min(10, { message: "A descrição deve ter pelo menos 10 caracteres" }),
     date: z.date(),
-    location: z.string().min(2, { message: "Location is required" }),
-    maxParticipants: z.coerce.number().min(1, { message: "Must be at least 1 participant" }),
+    location: z.string().min(2, { message: "Localização é obrigatória" }),
+    maxParticipants: z.coerce.number().min(1, { message: "Deve haver pelo menos 1 participante" }),
 });
 
 export default function EditEventPage() {
@@ -65,15 +66,15 @@ export default function EditEventPage() {
             const response = await eventsService.get<Event>(`/events/${params.id}`);
             const event = response.data;
             form.reset({
-                title: event.title,
+                title: event.name,
                 description: event.description,
                 location: event.location,
-                maxParticipants: event.maxParticipants,
-                date: new Date(event.date),
+                maxParticipants: event.maxCapacity,
+                date: new Date(event.eventDate),
             });
         } catch (error) {
             console.error("Failed to fetch event:", error);
-            toast.error("Failed to load event details.");
+            toast.error("Falha ao carregar detalhes do evento.");
         } finally {
             setLoading(false);
         }
@@ -83,15 +84,17 @@ export default function EditEventPage() {
         setSaving(true);
         try {
             await eventsService.put(`/events/${params.id}`, {
-                ...values,
-                date: values.date.toISOString(),
-                active: true, // Assuming we want to keep it active or add a field for it
+                name: values.title,
+                description: values.description,
+                eventDate: values.date.toISOString(),
+                location: values.location,
+                maxCapacity: values.maxParticipants,
             });
-            toast.success("Event updated successfully!");
+            toast.success("Evento atualizado com sucesso!");
             router.push("/");
         } catch (error: any) {
             console.error("Failed to update event:", error);
-            const msg = error.response?.data?.message || "Failed to update event.";
+            const msg = error.response?.data?.message || "Falha ao atualizar evento.";
             toast.error(msg);
         } finally {
             setSaving(false);
@@ -110,8 +113,8 @@ export default function EditEventPage() {
         <div className="max-w-2xl mx-auto">
             <Card>
                 <CardHeader>
-                    <CardTitle>Edit Event</CardTitle>
-                    <CardDescription>Update event details</CardDescription>
+                    <CardTitle>Editar Evento</CardTitle>
+                    <CardDescription>Atualizar detalhes do evento</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
@@ -121,9 +124,9 @@ export default function EditEventPage() {
                                 name="title"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Title</FormLabel>
+                                        <FormLabel>Título</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Event Title" {...field} />
+                                            <Input placeholder="Título do Evento" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -134,9 +137,9 @@ export default function EditEventPage() {
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Description</FormLabel>
+                                        <FormLabel>Descrição</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Event Description" {...field} />
+                                            <Input placeholder="Descrição do Evento" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -147,7 +150,7 @@ export default function EditEventPage() {
                                 name="date"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Date</FormLabel>
+                                        <FormLabel>Data</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -159,9 +162,9 @@ export default function EditEventPage() {
                                                         )}
                                                     >
                                                         {field.value ? (
-                                                            format(field.value, "PPP")
+                                                            format(field.value, "PPP", { locale: ptBR })
                                                         ) : (
-                                                            <span>Pick a date</span>
+                                                            <span>Escolha uma data</span>
                                                         )}
                                                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                     </Button>
@@ -176,6 +179,7 @@ export default function EditEventPage() {
                                                         date < new Date("1900-01-01")
                                                     }
                                                     initialFocus
+                                                    locale={ptBR}
                                                 />
                                             </PopoverContent>
                                         </Popover>
@@ -188,9 +192,9 @@ export default function EditEventPage() {
                                 name="location"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Location</FormLabel>
+                                        <FormLabel>Localização</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Event Location" {...field} />
+                                            <Input placeholder="Local do Evento" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -201,7 +205,7 @@ export default function EditEventPage() {
                                 name="maxParticipants"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Max Participants</FormLabel>
+                                        <FormLabel>Máximo de Participantes</FormLabel>
                                         <FormControl>
                                             <Input type="number" {...field} />
                                         </FormControl>
@@ -210,7 +214,7 @@ export default function EditEventPage() {
                                 )}
                             />
                             <Button type="submit" className="w-full" disabled={saving}>
-                                {saving ? "Saving..." : "Update Event"}
+                                {saving ? "Salvando..." : "Atualizar Evento"}
                             </Button>
                         </form>
                     </Form>

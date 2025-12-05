@@ -40,4 +40,16 @@ public class AdminController {
         UserResponse response = userService.adminCreateUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @GetMapping("/users/search")
+    @Operation(summary = "Buscar usuário por email (Admin)", description = "Busca um usuário pelo email.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Usuário encontrado", content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content(schema = @Schema(implementation = com.microsservicos.userservice.exception.ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Sem permissão (apenas ADMIN)", content = @Content(schema = @Schema(implementation = com.microsservicos.userservice.exception.ErrorResponse.class)))
+    })
+    public ResponseEntity<UserResponse> searchUser(@RequestParam String email) {
+        UserResponse response = userService.findByEmail(email);
+        return ResponseEntity.ok(response);
+    }
 }

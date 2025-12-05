@@ -3,6 +3,7 @@ package com.microsservicos.eventsservice.service;
 import com.microsservicos.eventsservice.dto.AttendanceDTO;
 import com.microsservicos.eventsservice.dto.EventRegistrationDTO;
 import com.microsservicos.eventsservice.dto.EventRegistrationResponseDTO;
+import com.microsservicos.eventsservice.dto.UserResponseDTO;
 import com.microsservicos.eventsservice.entity.Event;
 import com.microsservicos.eventsservice.entity.EventRegistration;
 import com.microsservicos.eventsservice.exception.BusinessException;
@@ -24,6 +25,7 @@ public class EventRegistrationService {
 
     private final EventRegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
+    private final UserServiceClient userServiceClient;
 
     @Transactional
     public EventRegistrationResponseDTO registerUserToEvent(UUID eventId, EventRegistrationDTO registrationDTO,
@@ -133,5 +135,30 @@ public class EventRegistrationService {
                 .attendedAt(registration.getAttendedAt())
                 .registeredBy(registration.getRegisteredBy())
                 .build();
+    }
+
+    @Transactional
+    public EventRegistrationResponseDTO registerUserByEmail(UUID eventId, String email, String adminEmail) {
+        // 1. Check if user exists
+        UserResponseDTO user = userServiceClient.findUserByEmail(email);
+
+        // 2. If not, create user
+        if (user == null) {
+            // Create user with name "Convidado" (or derive from email)
+            String name = "Convidado";
+            if (email.contains("@")) {
+                name = email.split("@")[0];
+            }
+            user = userServiceClient.createUser(name, email);
+        }
+
+        // 3. Register user to event
+        EventRegistrationDTO registrationDTO = EventRegistrationDTO.builder()
+                .userId(user.getId())
+                .userEmail(user.getEmail())
+                .userName(user.getName())
+                .build();
+
+        return registerUserToEvent(eventId, registrationDTO, adminEmail);
     }
 }

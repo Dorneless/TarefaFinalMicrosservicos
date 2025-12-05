@@ -282,4 +282,17 @@ public class UserService {
                 .active(user.getActive())
                 .build();
     }
+
+    public UserResponse findByEmail(String email) {
+        User currentUser = getAuthenticatedUser();
+
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new UnauthorizedException("Apenas administradores podem buscar usuários por email");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado com email: " + email));
+
+        return mapToUserResponse(user);
+    }
 }
