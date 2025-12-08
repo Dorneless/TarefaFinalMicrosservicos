@@ -35,4 +35,5 @@ export const certificateService = createApiClient('http://localhost:8083/certifi
 // So URL is http://localhost:8083/certificates
 
 // Correction for certificate service base URL
-export const certificateApi = createApiClient('http://localhost:8083'); 
+export const certificateApi = createApiClient('http://localhost:8083');
+export const logsApi = createApiClient('http://localhost:8084'); 

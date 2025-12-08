@@ -8,7 +8,7 @@ export default function AdminLayout({
     return (
         <div className="min-h-screen bg-background">
             <Navbar />
-            <main className="container py-6">{children}</main>
+            <main className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">{children}</main>
         </div>
     );
 }

@@ -64,3 +64,15 @@ export interface RegisterRequest {
     email: string;
     password?: string;
 }
+
+export interface Log {
+    id: string;
+    userEmail?: string;
+    timestamp: string;
+    body?: string;
+    statusCode?: number;
+    method: string;
+    service: string;
+    ip?: string;
+    path?: string;
+}

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { eventsService, certificateApi } from "@/lib/api";
+import axios from "axios";
 import { EventRegistration } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,10 @@ import { toast } from "sonner";
 import { CalendarCheck, XCircle, Download } from "lucide-react";
 
 export default function MyRegistrationsPage() {
+    const { data: session } = useSession();
+    const queryClient = useQueryClient();
+    const [cancelling, setCancelling] = useState<string | null>(null);
+
     const { data: registrations = [], isLoading: loading } = useQuery({
         queryKey: ["my-registrations"],
         queryFn: async () => {
@@ -40,6 +46,36 @@ export default function MyRegistrationsPage() {
         } catch (error) {
             console.error("Failed to generate certificate:", error);
             toast.error("Falha ao gerar certificado.");
+        }
+    };
+
+    const handleCancelRegistration = async (registrationId: string) => {
+        setCancelling(registrationId);
+        try {
+            await eventsService.delete(`/registrations/${registrationId}`);
+
+            // Send cancellation email
+            const canceledReg = registrations.find(r => r.id === registrationId);
+            if (canceledReg && session?.user) {
+                try {
+                    await axios.post("http://localhost:8082/api/notifications/event-cancellation", {
+                        name: session.user.name,
+                        email: session.user.email,
+                        eventName: canceledReg.eventName,
+                        eventDate: new Date().toISOString() // Or available date
+                    });
+                } catch (emailError) {
+                    console.error("Failed to send cancellation email:", emailError);
+                }
+            }
+
+            toast.success("Inscrição cancelada com sucesso!");
+            queryClient.invalidateQueries({ queryKey: ["my-registrations"] });
+        } catch (error) {
+            console.error("Failed to cancel registration:", error);
+            toast.error("Falha ao cancelar inscrição.");
+        } finally {
+            setCancelling(null);
         }
     };
 
@@ -87,7 +123,7 @@ export default function MyRegistrationsPage() {
                                     <span>Status: {reg.attended ? "Confirmado" : "Presença Pendente"}</span>
                                 </div>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex flex-col gap-2">
                                 <Button
                                     className="w-full"
                                     disabled={!reg.attended}
@@ -96,6 +132,16 @@ export default function MyRegistrationsPage() {
                                     <Download className="mr-2 h-4 w-4" />
                                     {reg.attended ? "Gerar Certificado" : "Aguardando Presença"}
                                 </Button>
+                                {!reg.attended && (
+                                    <Button
+                                        variant="destructive"
+                                        className="w-full"
+                                        disabled={cancelling === reg.id}
+                                        onClick={() => handleCancelRegistration(reg.id)}
+                                    >
+                                        {cancelling === reg.id ? "Cancelando..." : "Cancelar Inscrição"}
+                                    </Button>
+                                )}
                             </CardFooter>
                         </Card>
                     ))}

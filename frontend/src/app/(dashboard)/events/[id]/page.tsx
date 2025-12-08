@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { eventsService } from "@/lib/api";
+import axios from "axios";
 import { Event, EventRegistration } from "@/types";
 import { useSync } from "@/contexts/sync-context";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,20 @@ export default function EventDetailsPage() {
                 userEmail: session.user.email,
                 userName: session.user.name,
             });
+
+            // Send registration email
+            try {
+                await axios.post("http://localhost:8082/api/notifications/event-registration", {
+                    name: session.user.name,
+                    email: session.user.email,
+                    eventName: event?.name,
+                    eventDate: event?.eventDate,
+                    eventLocation: event?.location,
+                });
+            } catch (emailError) {
+                console.error("Failed to send registration email:", emailError);
+            }
+
             toast.success("Inscrição realizada com sucesso!");
             setIsRegistered(true);
         } catch (error: any) {
@@ -97,6 +112,19 @@ export default function EventDetailsPage() {
 
             if (registration) {
                 await eventsService.delete(`/registrations/${registration.id}`);
+
+                // Send cancellation email
+                try {
+                    await axios.post("http://localhost:8082/api/notifications/event-cancellation", {
+                        name: session?.user?.name,
+                        email: session?.user?.email,
+                        eventName: event?.name,
+                        eventDate: event?.eventDate,
+                    });
+                } catch (emailError) {
+                    console.error("Failed to send cancellation email:", emailError);
+                }
+
                 toast.success("Inscrição cancelada.");
                 setIsRegistered(false);
             }
@@ -158,6 +186,25 @@ export default function EventDetailsPage() {
             await eventsService.post(`/events/${event?.id}/register-by-email`, {
                 email: emailToRegister,
             });
+
+            // Send registration email (Admin triggered)
+            try {
+                // Note: We might not have the user's name if they are new or just by email.
+                // We'll use the email prefix as a placeholder if name isn't returned or available.
+                // The 'register-by-email' endpoint in events-service might create a user or link to existing.
+                // Ideally it returns the user details. Standard post response usually creates resource.
+                // Let's assume we use the email for now.
+                await axios.post("http://localhost:8082/api/notifications/event-registration", {
+                    name: emailToRegister.split("@")[0], // Fallback name
+                    email: emailToRegister,
+                    eventName: event?.name,
+                    eventDate: event?.eventDate,
+                    eventLocation: event?.location,
+                });
+            } catch (emailError) {
+                console.error("Failed to send admin registration email:", emailError);
+            }
+
             toast.success("Usuário inscrito com sucesso!");
             setEmailToRegister("");
             // Invalidate queries to refresh data

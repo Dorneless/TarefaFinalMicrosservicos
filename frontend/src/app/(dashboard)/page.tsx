@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { eventsService } from "@/lib/api";
 import { Event } from "@/types";
@@ -15,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
+    const { data: session } = useSession();
     const [search, setSearch] = useState("");
     const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
 
@@ -63,12 +65,19 @@ export default function DashboardPage() {
                         Descubra e inscreva-se nos próximos eventos.
                     </p>
                 </div>
-                <div className="w-full md:w-72">
-                    <Input
-                        placeholder="Buscar eventos..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="w-full md:w-72">
+                        <Input
+                            placeholder="Buscar eventos..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+                    {session?.user?.role === "ADMIN" && (
+                        <Button asChild>
+                            <Link href="/admin/events/create">Criar Evento</Link>
+                        </Button>
+                    )}
                 </div>
             </div>
 

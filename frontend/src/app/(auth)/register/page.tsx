@@ -44,6 +44,21 @@ export default function RegisterPage() {
         try {
             await axios.post("http://localhost:8080/api/auth/register", values);
 
+            // Send notification email
+            try {
+                // Determine the correct URL based on notification-service port (8082) and global prefix (api)
+                // notificationService is configured with baseURL 'http://localhost:8082/api' in api.ts
+                // The endpoint in NotificationController is 'notifications/account-created' (controller prefix 'notifications')
+                // So we call '/notifications/account-created'
+                await axios.post("http://localhost:8082/api/notifications/account-created", {
+                    name: values.name,
+                    email: values.email,
+                });
+            } catch (emailError) {
+                console.error("Failed to send welcome email:", emailError);
+                // Do not block the flow, just log the error
+            }
+
             toast.success("Cadastro realizado com sucesso! Por favor, faça login.");
             router.push("/login");
         } catch (error: any) {

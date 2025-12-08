@@ -13,7 +13,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, LogOut, Calendar, Award, UserCircle, Menu, CheckCircle, RefreshCw } from "lucide-react";
+import { User, LogOut, Calendar, Award, UserCircle, Menu, CheckCircle, RefreshCw, ScrollText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSync } from "@/contexts/sync-context";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,13 +68,14 @@ export function Navbar() {
                     ))}
                     {session?.user?.role === "ADMIN" && (
                         <Link
-                            href="/admin/events/create"
+                            href="/admin/logs"
                             className={cn(
-                                "transition-colors hover:text-foreground/80 font-semibold text-primary flex items-center gap-2",
-                                pathname === "/admin/events/create" ? "text-primary/80" : "text-primary"
+                                "transition-colors hover:text-foreground/80 flex items-center gap-2",
+                                pathname === "/admin/logs" ? "text-primary font-semibold" : "text-foreground/60"
                             )}
                         >
-                            Criar Evento
+                            <ScrollText className="h-4 w-4" />
+                            Logs
                         </Link>
                     )}
                 </nav>
