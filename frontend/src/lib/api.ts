@@ -20,20 +20,9 @@ const createApiClient = (baseURL: string) => {
     return api;
 };
 
-export const userService = createApiClient('http://localhost:8080/api');
-export const eventsService = createApiClient('http://localhost:8081/api');
-export const notificationService = createApiClient('http://localhost:8082/api');
-export const certificateService = createApiClient('http://localhost:8083/certificates'); // Note: Certificate controller has /certificates prefix, but main.ts might not have /api prefix or it does?
-// Checking certificate service main.ts: app.listen(process.env.PORT ?? 3000); No setGlobalPrefix('api').
-// But the controller has @Controller('certificates').
-// So it is http://localhost:8083/certificates
-// Wait, the other services have /api prefix.
-// User Service: @RequestMapping("/api/admin"), @RequestMapping("/api/auth"), @RequestMapping("/api/users")
-// Events Service: @RequestMapping("/api/events"), @RequestMapping("/api")
-// Notification Service: app.setGlobalPrefix('api');
-// Certificate Service: No global prefix in main.ts. Controller is 'certificates'.
-// So URL is http://localhost:8083/certificates
-
-// Correction for certificate service base URL
-export const certificateApi = createApiClient('http://localhost:8083');
-export const logsApi = createApiClient('http://localhost:8084'); 
+export const userService = createApiClient(process.env.NEXT_PUBLIC_USER_API_URL || 'http://localhost:8080/api');
+export const eventsService = createApiClient(process.env.NEXT_PUBLIC_EVENTS_API_URL || 'http://localhost:8081/api');
+export const notificationService = createApiClient(process.env.NEXT_PUBLIC_NOTIFICATION_API_URL || 'http://localhost:8082/api');
+export const certificateService = createApiClient(process.env.NEXT_PUBLIC_CERTIFICATE_API_URL || 'http://localhost:8083/certificates');
+export const certificateApi = createApiClient(process.env.NEXT_PUBLIC_CERTIFICATE_API_BASE_URL || 'http://localhost:8083');
+export const logsApi = createApiClient(process.env.NEXT_PUBLIC_LOGS_API_URL || 'http://localhost:8084');
