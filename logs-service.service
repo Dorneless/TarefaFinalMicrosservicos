@@ -1,0 +1,19 @@
+[Unit]
+Description=Logs Service
+After=network.target docker.service
+
+[Service]
+User=azureuser
+WorkingDirectory=/path/to/project/logs-service
+ExecStart=/usr/bin/node dist/main
+Environment=DB_HOST=localhost
+Environment=DB_PORT=5555
+Environment=DB_USER=postgres
+Environment=DB_PASS=postgres
+Environment=DB_NAME=testefinal_db
+Environment=PORT=8084
+Environment=CORS_ALLOWED_ORIGINS=*
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

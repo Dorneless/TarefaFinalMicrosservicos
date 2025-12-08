@@ -1,0 +1,17 @@
+[Unit]
+Description=Frontend (Next.js)
+After=network.target user-service.service events-service.service
+
+[Service]
+User=azureuser
+WorkingDirectory=/path/to/project/frontend
+ExecStart=/usr/bin/npm start
+Environment=PORT=3000
+# Node build time vars (NEXT_PUBLIC) are baked in at build time,
+# but we can set them here just in case they are used at runtime or for rebuilds.
+# However, 'npm start' serves the static build.
+# Critical: User must build with these vars present.
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
