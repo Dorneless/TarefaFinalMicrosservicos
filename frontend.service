@@ -1,17 +1,25 @@
 [Unit]
 Description=Frontend (Next.js)
-After=network.target user-service.service events-service.service
+After=network.target
 
 [Service]
-User=azureuser
-WorkingDirectory=/path/to/project/frontend
-ExecStart=/usr/bin/npm start
-Environment=PORT=3000
-# Node build time vars (NEXT_PUBLIC) are baked in at build time,
-# but we can set them here just in case they are used at runtime or for rebuilds.
-# However, 'npm start' serves the static build.
-# Critical: User must build with these vars present.
+User=univates
+WorkingDirectory=/home/univates/TarefaFinalMicrosservicos/frontend
+ExecStart=/snap/bin/npm start
+StandardOutput=append:/home/univates/TarefaFinalMicrosservicos/frontend/frontend.log
+StandardError=append:/home/univates/TarefaFinalMicrosservicos/frontend/frontend-error.log
 Restart=always
+
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=NEXT_PUBLIC_USER_API_URL=http://177.44.248.107:8080/api
+Environment=NEXT_PUBLIC_EVENTS_API_URL=http://177.44.248.107:8081/api
+Environment=NEXT_PUBLIC_NOTIFICATION_API_URL=http://177.44.248.107:8082/api
+Environment=NEXT_PUBLIC_CERTIFICATE_API_URL=http://177.44.248.107:8083/certificates
+Environment=NEXT_PUBLIC_CERTIFICATE_API_BASE_URL=http://177.44.248.107:8083
+Environment=NEXT_PUBLIC_LOGS_API_URL=http://177.44.248.107:8084
+Environment=NEXTAUTH_URL=http://177.44.248.107:3000/login
+Environment=NEXTAUTH_SECRET=BBOKS4GX05O6iWB7Ko+xIOZS+33/4PrO4LiLHuFzSds=
 
 [Install]
 WantedBy=multi-user.target

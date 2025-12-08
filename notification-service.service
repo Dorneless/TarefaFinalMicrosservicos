@@ -3,9 +3,11 @@ Description=Notification Service
 After=network.target logs-service.service
 
 [Service]
-User=azureuser
-WorkingDirectory=/path/to/project/notification-service
-ExecStart=/usr/bin/node dist/main
+User=univates
+WorkingDirectory=/home/univates/TarefaFinalMicrosservicos/notification-service
+ExecStart=/snap/bin/node dist/main
+StandardOutput=append:/home/univates/TarefaFinalMicrosservicos/notification-service/notification-service.log
+StandardError=append:/home/univates/TarefaFinalMicrosservicos/notification-service/notification-service-error.log
 Environment=PORT=8082
 Environment=SMTP_HOST=smtp.gmail.com
 Environment=SMTP_PORT=587

@@ -3,9 +3,11 @@ Description=Certificate Service
 After=network.target logs-service.service
 
 [Service]
-User=azureuser
-WorkingDirectory=/path/to/project/certificate-service
-ExecStart=/usr/bin/node dist/main
+User=univates
+WorkingDirectory=/home/univates/TarefaFinalMicrosservicos/certificate-service
+ExecStart=/snap/bin/node dist/main
+StandardOutput=append:/home/univates/TarefaFinalMicrosservicos/certificate-service/certificate-service.log
+StandardError=append:/home/univates/TarefaFinalMicrosservicos/certificate-service/certificate-service-error.log
 Environment=DB_HOST=localhost
 Environment=DB_PORT=5555
 Environment=DB_USER=postgres

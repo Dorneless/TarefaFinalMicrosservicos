@@ -3,9 +3,11 @@ Description=Logs Service
 After=network.target docker.service
 
 [Service]
-User=azureuser
-WorkingDirectory=/path/to/project/logs-service
-ExecStart=/usr/bin/node dist/main
+User=univates
+WorkingDirectory=/home/univates/TarefaFinalMicrosservicos/logs-service
+ExecStart=/snap/bin/node dist/main
+StandardOutput=append:/home/univates/TarefaFinalMicrosservicos/logs-service/logs-service.log
+StandardError=append:/home/univates/TarefaFinalMicrosservicos/logs-service/logs-service-error.log
 Environment=DB_HOST=localhost
 Environment=DB_PORT=5555
 Environment=DB_USER=postgres

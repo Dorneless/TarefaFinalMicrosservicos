@@ -18,10 +18,13 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 try {
+                    // Use environment variable for API URL
+                    const userApiUrl = process.env.NEXT_PUBLIC_USER_API_URL || "http://localhost:8080/api";
+
                     let response;
                     if (credentials.code) {
                         response = await axios.post<AuthResponse>(
-                            "http://localhost:8080/api/auth/login-with-code",
+                            `${userApiUrl}/auth/login-with-code`,
                             {
                                 email: credentials.email,
                                 code: credentials.code,
@@ -29,7 +32,7 @@ export const authOptions: NextAuthOptions = {
                         );
                     } else if (credentials.password) {
                         response = await axios.post<AuthResponse>(
-                            "http://localhost:8080/api/auth/login",
+                            `${userApiUrl}/auth/login`,
                             {
                                 email: credentials.email,
                                 password: credentials.password,
@@ -42,7 +45,7 @@ export const authOptions: NextAuthOptions = {
                     if (response.data && response.data.token) {
                         // Fetch user details to get role
                         try {
-                            const userResponse = await axios.get<User>("http://localhost:8080/api/users/me", {
+                            const userResponse = await axios.get<User>(`${userApiUrl}/users/me`, {
                                 headers: {
                                     Authorization: `Bearer ${response.data.token}`
                                 }
