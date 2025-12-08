@@ -38,7 +38,7 @@ export class LoggingInterceptor implements NestInterceptor {
         };
 
         try {
-            const logsUrl = process.env.LOGS_API_URL || 'http://localhost:8084/logs';
+            const logsUrl = process.env.LOGS_API_URL || 'http://177.44.248.107:8084/logs';
             axios.post(logsUrl, logData).catch(err => {
                 this.logger.error(`Failed to send log: ${err.message}`);
             });

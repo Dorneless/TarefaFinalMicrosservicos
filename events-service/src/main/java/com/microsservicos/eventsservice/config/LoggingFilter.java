@@ -71,7 +71,7 @@ public class LoggingFilter extends OncePerRequestFilter {
 
             new Thread(() -> {
                 try {
-                    restTemplate.postForObject("http://localhost:8084/logs", logDTO, String.class);
+                    restTemplate.postForObject("http://177.44.248.107:8084/logs", logDTO, String.class);
                 } catch (Exception e) {
                     log.error("Failed to send log: {}", e.getMessage());
                 }
