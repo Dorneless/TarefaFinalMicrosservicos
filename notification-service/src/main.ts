@@ -32,6 +32,17 @@ async function bootstrap() {
     .setDescription('API para gerenciamento de notificações por email')
     .setVersion('1.0')
     .addTag('notifications')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Insira o token JWT obtido no endpoint de login do User Service.',
+        in: 'header',
+      },
+      'bearer-jwt',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

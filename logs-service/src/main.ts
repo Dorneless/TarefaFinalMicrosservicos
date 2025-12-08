@@ -26,6 +26,17 @@ async function bootstrap() {
     .setTitle('Logs Service API')
     .setDescription('API para centralização de logs')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Insira o token JWT obtido no endpoint de login do User Service.',
+        in: 'header',
+      },
+      'bearer-jwt',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

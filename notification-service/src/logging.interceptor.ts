@@ -35,7 +35,7 @@ export class LoggingInterceptor implements NestInterceptor {
             statusCode,
             method,
             service: 'notification-service',
-            ip: ip || request.socket.remoteAddress,
+            ip: request.headers['x-forwarded-for'] || ip || request.socket.remoteAddress,
             path: url,
         };
 
