@@ -10,7 +10,7 @@ async function bootstrap() {
   // Enable CORS
   // Enable CORS
   app.enableCors({
-    origin: (process.env.CORS_ALLOWED_ORIGINS || 'http://177.44.248.107').split(','),
+    origin: (process.env.CORS_ALLOWED_ORIGINS || 'http://177.44.248.107:3000').split(','),
     credentials: true,
   });
 
