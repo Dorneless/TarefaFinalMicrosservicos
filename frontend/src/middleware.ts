@@ -26,7 +26,8 @@ export default withAuth(
                     pathname === "/" ||
                     pathname === "/login" ||
                     pathname === "/register" ||
-                    pathname.startsWith("/events/")
+                    pathname.startsWith("/events/") ||
+                    pathname.startsWith("/verify-certificate")
                 ) {
                     return true
                 }
