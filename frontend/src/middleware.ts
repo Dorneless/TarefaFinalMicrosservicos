@@ -8,12 +8,20 @@ export default withAuth(
             (req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/register") &&
             req.nextauth.token
         ) {
-            return NextResponse.redirect(new URL("/", req.url))
+            const response = NextResponse.redirect(new URL("/", req.url));
+            response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+            response.headers.set("Pragma", "no-cache");
+            response.headers.set("Expires", "0");
+            return response;
         }
 
         // Admin route protection
         if (req.nextUrl.pathname.startsWith("/admin") && req.nextauth.token?.role !== "ADMIN") {
-            return NextResponse.redirect(new URL("/", req.url));
+            const response = NextResponse.redirect(new URL("/", req.url));
+            response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+            response.headers.set("Pragma", "no-cache");
+            response.headers.set("Expires", "0");
+            return response;
         }
     },
     {
