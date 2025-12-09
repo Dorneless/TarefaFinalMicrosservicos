@@ -6,14 +6,11 @@ export default withAuth(
         const token = req.nextauth.token;
         const path = req.nextUrl.pathname;
 
-        console.log(`[Middleware] Path: ${path}, Token Exists: ${!!token}, Role: ${token?.role}`);
-
-        // If the user is logged in and trying to access login/register, redirect to dashboard
+        // 1. Redirect to Dashboard if logged in and trying to access auth pages
         if (
             (path === "/login" || path === "/register") &&
             token
         ) {
-            console.log(`[Middleware] Redirecting logged in user from ${path} to /`);
             const response = NextResponse.redirect(new URL("/", req.url));
             response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
             response.headers.set("Pragma", "no-cache");
@@ -21,42 +18,41 @@ export default withAuth(
             return response;
         }
 
-        // Admin route protection
+        // 2. Define Public Routes
+        const isPublic =
+            path === "/" ||
+            path === "/login" ||
+            path === "/register" ||
+            path.startsWith("/events/") ||
+            path.startsWith("/verify-certificate");
+
+        // 3. Protect Private Routes (Manual Redirect for Cache Control)
+        if (!isPublic && !token) {
+            const loginUrl = new URL("/login", req.url);
+            loginUrl.searchParams.set("callbackUrl", req.url);
+            const response = NextResponse.redirect(loginUrl);
+            response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+            response.headers.set("Pragma", "no-cache");
+            response.headers.set("Expires", "0");
+            return response;
+        }
+
+        // 4. Admin route protection
         if (path.startsWith("/admin") && token?.role !== "ADMIN") {
-            console.log(`[Middleware] Redirecting unauthorized user from ${path} to /`);
             const response = NextResponse.redirect(new URL("/", req.url));
             response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
             response.headers.set("Pragma", "no-cache");
             response.headers.set("Expires", "0");
             return response;
         }
+
+        return NextResponse.next();
     },
     {
         callbacks: {
-            authorized: ({ req, token }) => {
-                const pathname = req.nextUrl.pathname
-                const isAuth = !!token;
-
-                // Simple log to trace every request decision
-                console.log(`[Middleware:Authorized] Path: ${pathname}, Token: ${isAuth ? 'YES' : 'NO'}`);
-
-                // Public routes
-                if (
-                    pathname === "/" ||
-                    pathname === "/login" ||
-                    pathname === "/register" ||
-                    pathname.startsWith("/events/") ||
-                    pathname.startsWith("/verify-certificate")
-                ) {
-                    return true
-                }
-
-                // Protected routes require token
-                if (!isAuth) {
-                    console.log(`[Middleware:Authorized] Access Denied for ${pathname}. Redirecting to Login.`);
-                }
-                return isAuth
-            },
+            // authorized: Always return true to delegate logic to the middleware function above
+            // This prevents the implicit (and cached) redirect from withAuth
+            authorized: () => true,
         },
     }
 )
