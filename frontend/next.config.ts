@@ -82,6 +82,19 @@ const withPWA = withPWAInit({
   workboxOptions: {
     runtimeCaching: [
       {
+        urlPattern: ({ request, url }) => {
+          return request.mode === "navigate" || url.searchParams.has("_rsc");
+        },
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "next-pages-rsc",
+          expiration: {
+            maxEntries: 200,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
         urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,
         handler: "CacheFirst",
         options: {
