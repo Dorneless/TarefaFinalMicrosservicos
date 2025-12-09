@@ -21,6 +21,9 @@ public class LoggingFilter extends OncePerRequestFilter {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @org.springframework.beans.factory.annotation.Value("${logs.service.url:http://localhost:8084/logs}")
+    private String logsServiceUrl;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -71,7 +74,7 @@ public class LoggingFilter extends OncePerRequestFilter {
 
             new Thread(() -> {
                 try {
-                    restTemplate.postForObject("http://177.44.248.107:8084/logs", logDTO, String.class);
+                    restTemplate.postForObject(logsServiceUrl, logDTO, String.class);
                 } catch (Exception e) {
                     log.error("Failed to send log: {}", e.getMessage());
                 }

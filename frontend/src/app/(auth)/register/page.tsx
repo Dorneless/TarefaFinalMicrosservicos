@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import axios from "axios";
+import { notificationService } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -42,7 +43,7 @@ export default function RegisterPage() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true);
         try {
-            await axios.post("http://localhost:8080/api/auth/register", values);
+            await axios.post(process.env.NEXT_PUBLIC_USER_API_URL ? `${process.env.NEXT_PUBLIC_USER_API_URL}/auth/register` : "http://localhost:8080/api/auth/register", values);
 
             // Send notification email
             try {
@@ -50,7 +51,7 @@ export default function RegisterPage() {
                 // notificationService is configured with baseURL 'http://localhost:8082/api' in api.ts
                 // The endpoint in NotificationController is 'notifications/account-created' (controller prefix 'notifications')
                 // So we call '/notifications/account-created'
-                await axios.post("http://177.44.248.107:8082/api/notifications/account-created", {
+                await notificationService.post("/notifications/account-created", {
                     name: values.name,
                     email: values.email,
                 });

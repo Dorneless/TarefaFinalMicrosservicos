@@ -19,7 +19,7 @@ export const authOptions: NextAuthOptions = {
 
                 try {
                     // Use environment variable for API URL
-                    const userApiUrl = process.env.NEXT_PUBLIC_USER_API_URL || "http://177.44.248.107:8080/api";
+                    const userApiUrl = process.env.NEXT_PUBLIC_USER_API_URL || "http://localhost:8080/api";
 
                     let response;
                     if (credentials.code) {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { eventsService } from "@/lib/api";
+import { eventsService, notificationService } from "@/lib/api";
 import axios from "axios";
 import { Event, EventRegistration } from "@/types";
 import { useSync } from "@/contexts/sync-context";
@@ -80,7 +80,7 @@ export default function EventDetailsPage() {
 
             // Send registration email
             try {
-                await axios.post("http://177.44.248.107:8082/api/notifications/event-registration", {
+                await notificationService.post("/notifications/event-registration", {
                     name: session.user.name,
                     email: session.user.email,
                     eventName: event?.name,
@@ -115,7 +115,7 @@ export default function EventDetailsPage() {
 
                 // Send cancellation email
                 try {
-                    await axios.post("http://177.44.248.107:8082/api/notifications/event-cancellation", {
+                    await notificationService.post("/notifications/event-cancellation", {
                         name: session?.user?.name,
                         email: session?.user?.email,
                         eventName: event?.name,
@@ -194,7 +194,7 @@ export default function EventDetailsPage() {
                 // The 'register-by-email' endpoint in events-service might create a user or link to existing.
                 // Ideally it returns the user details. Standard post response usually creates resource.
                 // Let's assume we use the email for now.
-                await axios.post("http://177.44.248.107:8082/api/notifications/event-registration", {
+                await notificationService.post("/notifications/event-registration", {
                     name: emailToRegister.split("@")[0], // Fallback name
                     email: emailToRegister,
                     eventName: event?.name,

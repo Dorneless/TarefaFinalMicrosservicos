@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import Link from "next/link";
-import axios from "axios";
+import { userService } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { persister } from "@/lib/react-query";
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
 
         setIsLoading(true);
         try {
-            await axios.post("http://localhost:8080/api/auth/request-code", { email });
+            await userService.post("/auth/request-code", { email });
             toast.success("Código de verificação enviado para seu email!");
             setLoginMode("code");
         } catch (error) {

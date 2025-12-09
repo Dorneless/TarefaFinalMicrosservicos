@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { eventsService, certificateApi } from "@/lib/api";
+import { eventsService, certificateApi, notificationService } from "@/lib/api";
 import axios from "axios";
 import { EventRegistration } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -58,7 +58,7 @@ export default function MyRegistrationsPage() {
             const canceledReg = registrations.find(r => r.id === registrationId);
             if (canceledReg && session?.user) {
                 try {
-                    await axios.post("http://177.44.248.107:8082/api/notifications/event-cancellation", {
+                    await notificationService.post("/notifications/event-cancellation", {
                         name: session.user.name,
                         email: session.user.email,
                         eventName: canceledReg.eventName,

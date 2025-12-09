@@ -18,7 +18,7 @@ public class UserServiceClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${user.service.url:http://177.44.248.107:8080/api}")
+    @Value("${user.service.url:http://localhost:8080/api}")
     private String userServiceUrl;
 
     public UserResponseDTO findUserByEmail(String email) {

@@ -43,7 +43,7 @@ async function bootstrap() {
   SwaggerModule.setup('swagger-ui.html', app, document);
 
   app.enableCors({
-    origin: (process.env.CORS_ALLOWED_ORIGINS || 'http://177.44.248.107:3000').split(','),
+    origin: (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
