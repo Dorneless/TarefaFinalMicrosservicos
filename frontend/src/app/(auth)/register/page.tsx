@@ -50,7 +50,7 @@ export default function RegisterPage() {
                 // notificationService is configured with baseURL 'http://localhost:8082/api' in api.ts
                 // The endpoint in NotificationController is 'notifications/account-created' (controller prefix 'notifications')
                 // So we call '/notifications/account-created'
-                await axios.post("http://localhost:8082/api/notifications/account-created", {
+                await axios.post("http://177.44.248.107:8082/api/notifications/account-created", {
                     name: values.name,
                     email: values.email,
                 });

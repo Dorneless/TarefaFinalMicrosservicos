@@ -80,7 +80,7 @@ export default function EventDetailsPage() {
 
             // Send registration email
             try {
-                await axios.post("http://localhost:8082/api/notifications/event-registration", {
+                await axios.post("http://177.44.248.107:8082/api/notifications/event-registration", {
                     name: session.user.name,
                     email: session.user.email,
                     eventName: event?.name,
@@ -115,7 +115,7 @@ export default function EventDetailsPage() {
 
                 // Send cancellation email
                 try {
-                    await axios.post("http://localhost:8082/api/notifications/event-cancellation", {
+                    await axios.post("http://177.44.248.107:8082/api/notifications/event-cancellation", {
                         name: session?.user?.name,
                         email: session?.user?.email,
                         eventName: event?.name,
@@ -194,7 +194,7 @@ export default function EventDetailsPage() {
                 // The 'register-by-email' endpoint in events-service might create a user or link to existing.
                 // Ideally it returns the user details. Standard post response usually creates resource.
                 // Let's assume we use the email for now.
-                await axios.post("http://localhost:8082/api/notifications/event-registration", {
+                await axios.post("http://177.44.248.107:8082/api/notifications/event-registration", {
                     name: emailToRegister.split("@")[0], // Fallback name
                     email: emailToRegister,
                     eventName: event?.name,

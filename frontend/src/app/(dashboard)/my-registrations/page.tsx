@@ -58,7 +58,7 @@ export default function MyRegistrationsPage() {
             const canceledReg = registrations.find(r => r.id === registrationId);
             if (canceledReg && session?.user) {
                 try {
-                    await axios.post("http://localhost:8082/api/notifications/event-cancellation", {
+                    await axios.post("http://177.44.248.107:8082/api/notifications/event-cancellation", {
                         name: session.user.name,
                         email: session.user.email,
                         eventName: canceledReg.eventName,
