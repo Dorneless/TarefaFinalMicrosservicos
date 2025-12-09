@@ -1,41 +1,14 @@
 import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
 
-const withPWA = require("@ducanh2912/next-pwa").default({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
-  runtimeCaching: [
-    {
-      urlPattern: /^https?.+\/api\/events.*/i,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "api-events-cache",
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-        },
-        networkTimeoutSeconds: 10,
-      },
-    },
-    {
-      urlPattern: /^https?.+\/api\/.*/i,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "api-others-cache",
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 60 * 60 * 24, // 1 day
-        },
-        networkTimeoutSeconds: 10,
-      },
-    },
-  ],
-});
+// const withPWA = withPWAInit({
+//   dest: "public",
+//   disable: process.env.NODE_ENV === "development",
+// });
 
 const nextConfig: NextConfig = {
   /* config options here */
-  reactCompiler: true,
+  // reactCompiler: true,
   async headers() {
     return [
       {
@@ -103,4 +76,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+// export default withPWA(nextConfig);
+export default nextConfig;
