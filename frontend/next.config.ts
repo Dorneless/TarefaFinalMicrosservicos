@@ -1,11 +1,37 @@
 import type { NextConfig } from "next";
 
-// const withPWA = require("@ducanh2912/next-pwa").default({
-//   dest: "public",
-//   register: true,
-//   skipWaiting: true,
-//   disable: process.env.NODE_ENV === "development",
-// });
+const withPWA = require("@ducanh2912/next-pwa").default({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.+\/api\/events.*/i,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "api-events-cache",
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+        },
+        networkTimeoutSeconds: 10,
+      },
+    },
+    {
+      urlPattern: /^https?.+\/api\/.*/i,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "api-others-cache",
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 * 24, // 1 day
+        },
+        networkTimeoutSeconds: 10,
+      },
+    },
+  ],
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -77,4 +103,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig; // withPWA(nextConfig);
+export default withPWA(nextConfig);

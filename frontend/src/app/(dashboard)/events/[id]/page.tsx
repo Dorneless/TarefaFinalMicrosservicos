@@ -40,6 +40,8 @@ export default function EventDetailsPage() {
             return response.data;
         },
         enabled: !!params.id,
+        staleTime: 1000 * 60 * 10, // 10 minutes
+        gcTime: 1000 * 60 * 60, // 1 hour
     });
 
     const { data: registrations = [] } = useQuery({

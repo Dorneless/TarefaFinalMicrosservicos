@@ -30,6 +30,8 @@ export default function ManageAttendancePage() {
             return response.data;
         },
         enabled: !!params.id,
+        staleTime: 1000 * 60 * 10, // 10 minutes
+        gcTime: 1000 * 60 * 60, // 1 hour
     });
 
     const handleMarkAttendance = async (registrationId: string, attended: boolean) => {
