@@ -9,19 +9,7 @@ import { SyncProvider } from "@/contexts/sync-context";
 import { useEffect } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-    useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (registrations) {
-                for (let registration of registrations) {
-                    console.log('[SW-Cleaner] Unregistering Service Worker:', registration);
-                    registration.unregister();
-                }
-                if (registrations.length === 0) {
-                    console.log('[SW-Cleaner] No Service Workers found.');
-                }
-            });
-        }
-    }, []);
+
 
     return (
         <PersistQueryClientProvider
