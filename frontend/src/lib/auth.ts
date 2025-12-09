@@ -78,9 +78,9 @@ export const authOptions: NextAuthOptions = {
     ],
     callbacks: {
         async jwt({ token, user, trigger, session }) {
-            // console.log(`[Auth] JWT Callback. Trigger: ${trigger}, Token Exists: ${!!token}, User Exists: ${!!user}`);
+            // Log trigger to see if it's an update, signin, or basic access
+            // console.log(`[AuthDebug] JWT Callback. Trigger: ${trigger}, User: ${user?.email}`);
             if (user) {
-                console.log(`[Auth] JWT Initial Sign In. User: ${user.email}`);
                 token.accessToken = user.accessToken;
                 token.role = user.role;
                 token.id = user.id;
@@ -88,7 +88,7 @@ export const authOptions: NextAuthOptions = {
             return token;
         },
         async session({ session, token }) {
-            // console.log(`[Auth] Session Callback. Token: ${token?.sub}`);
+            console.log(`[AuthDebug] Session Callback. Token Sub: ${token?.sub?.slice(0, 5)}...`);
             session.user.accessToken = token.accessToken as string;
             session.user.role = token.role as string;
             session.user.id = token.id as string;
@@ -102,16 +102,5 @@ export const authOptions: NextAuthOptions = {
         strategy: "jwt",
         maxAge: 30 * 24 * 60 * 60, // 30 days
         updateAge: 24 * 60 * 60, // 24 hours
-    },
-    cookies: {
-        sessionToken: {
-            name: `next-auth.session-token`,
-            options: {
-                httpOnly: true,
-                sameSite: "lax",
-                path: "/",
-                secure: process.env.NODE_ENV === "production",
-            },
-        },
     },
 };
