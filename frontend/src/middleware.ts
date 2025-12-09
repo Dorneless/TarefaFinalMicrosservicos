@@ -6,6 +6,9 @@ export default withAuth(
         const token = req.nextauth.token;
         const path = req.nextUrl.pathname;
 
+        console.log(`[Middleware Check] Path: ${path} | Token Exists: ${!!token} | Role: ${token?.role} | Cookie: ${req.cookies.get("next-auth.session-token")?.value ? "YES" : "NO"}`);
+
+
         // 1. Redirect to Dashboard if logged in and trying to access auth pages
         if (
             (path === "/login" || path === "/register") &&
