@@ -3,11 +3,17 @@ import { NextResponse } from "next/server"
 
 export default withAuth(
     function middleware(req) {
+        const token = req.nextauth.token;
+        const path = req.nextUrl.pathname;
+
+        console.log(`[Middleware] Path: ${path}, Token Exists: ${!!token}, Role: ${token?.role}`);
+
         // If the user is logged in and trying to access login/register, redirect to dashboard
         if (
-            (req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/register") &&
-            req.nextauth.token
+            (path === "/login" || path === "/register") &&
+            token
         ) {
+            console.log(`[Middleware] Redirecting logged in user from ${path} to /`);
             const response = NextResponse.redirect(new URL("/", req.url));
             response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
             response.headers.set("Pragma", "no-cache");
@@ -16,7 +22,8 @@ export default withAuth(
         }
 
         // Admin route protection
-        if (req.nextUrl.pathname.startsWith("/admin") && req.nextauth.token?.role !== "ADMIN") {
+        if (path.startsWith("/admin") && token?.role !== "ADMIN") {
+            console.log(`[Middleware] Redirecting unauthorized user from ${path} to /`);
             const response = NextResponse.redirect(new URL("/", req.url));
             response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
             response.headers.set("Pragma", "no-cache");
@@ -28,6 +35,10 @@ export default withAuth(
         callbacks: {
             authorized: ({ req, token }) => {
                 const pathname = req.nextUrl.pathname
+                const isAuth = !!token;
+
+                // Simple log to trace every request decision
+                console.log(`[Middleware:Authorized] Path: ${pathname}, Token: ${isAuth ? 'YES' : 'NO'}`);
 
                 // Public routes
                 if (
@@ -41,7 +52,10 @@ export default withAuth(
                 }
 
                 // Protected routes require token
-                return !!token
+                if (!isAuth) {
+                    console.log(`[Middleware:Authorized] Access Denied for ${pathname}. Redirecting to Login.`);
+                }
+                return isAuth
             },
         },
     }

@@ -77,8 +77,10 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
+            // console.log(`[Auth] JWT Callback. Trigger: ${trigger}, Token Exists: ${!!token}, User Exists: ${!!user}`);
             if (user) {
+                console.log(`[Auth] JWT Initial Sign In. User: ${user.email}`);
                 token.accessToken = user.accessToken;
                 token.role = user.role;
                 token.id = user.id;
@@ -86,6 +88,7 @@ export const authOptions: NextAuthOptions = {
             return token;
         },
         async session({ session, token }) {
+            // console.log(`[Auth] Session Callback. Token: ${token?.sub}`);
             session.user.accessToken = token.accessToken as string;
             session.user.role = token.role as string;
             session.user.id = token.id as string;
