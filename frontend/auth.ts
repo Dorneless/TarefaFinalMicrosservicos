@@ -58,22 +58,37 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }),
     ],
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
             if (user) {
+                token.user = {
+                    ...user,
+                    // Ensure these are available at the top level of token.user if needed, 
+                    // or just rely on them being in the spread user object.
+                    // We explicitly set them to ensure typescript happiness if needed, 
+                    // but spreading user is the key to "save all info".
+                }
+                // Keep these top-level for backwards compatibility if other parts use them directly from token
                 token.accessToken = (user as any).accessToken
                 token.role = (user as any).role
                 token.id = (user as any).id
-                token.user = user
             }
+
+            if (trigger === "update" && session) {
+                // Merge existing token.user with new session data
+                token.user = {
+                    ...(token.user as any),
+                    ...session.user,
+                }
+            }
+
             return token
         },
         async session({ session, token }) {
             if (token.user) {
-                session.user.id = (token.user as any).id
-                session.user.role = (token.user as any).role
-                session.user.accessToken = (token.user as any).accessToken
-                session.user.name = (token.user as any).name
-                session.user.email = (token.user as any).email
+                session.user = {
+                    ...session.user,
+                    ...(token.user as any), // Spread all properties from token.user (which comes from backend user)
+                }
             }
             return session
         },

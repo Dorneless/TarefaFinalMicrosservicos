@@ -16,20 +16,27 @@ export function LogsContent() {
 
     const itemsPerPage = 20
 
+    const [hasFetched, setHasFetched] = useState(false)
+
     useEffect(() => {
+        if (status === "loading") return // Wait for session
+
         if (status === "unauthenticated") {
             router.push("/login")
-        } else if (session?.user?.role !== "ADMIN" && status === "authenticated") {
-            router.push("/")
-        } else if (session?.user?.role === "ADMIN" && logs.length === 0 && !loading) {
-            // loading check is initial state true, so this might need adjustment logic-wise or just trust stable dependency
-            // Actually, the original issue was just session changing. 
-            // Let's just call loadLogs if verify condition context.
-            // But wait, loadLogs sets state, which triggers re-render. If session is new ref, loop.
-            // By removing session from dep array and using session.user.role, we break loop.
-            loadLogs()
+            return
         }
-    }, [status, session?.user?.role, router]) // Removed full 'session' object dependency
+
+        if (session?.user?.role !== "ADMIN") {
+            router.push("/")
+            return
+        }
+
+        // Only fetch if we haven't picked up logs yet and we are admin
+        if (!hasFetched) {
+            loadLogs()
+            setHasFetched(true)
+        }
+    }, [status, session?.user?.role, router, hasFetched])
 
     async function loadLogs() {
         setLoading(true)

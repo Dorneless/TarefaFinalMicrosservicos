@@ -20,11 +20,11 @@ export function ProfileContent() {
             setFormData({
                 name: session.user.name || "",
                 email: session.user.email || "",
-                document: "", // Session might not have these details by default, usually need to fetch full profile or these are in token
-                phone: ""
+                // Cast to any because TS doesn't know about these fields yet on DefaultSession
+                // but we know they are there because we updated auth.ts
+                document: (session.user as any).document || "",
+                phone: (session.user as any).phone || "",
             })
-            // If we need to fetch full profile to get document/phone, we might need a getUserProfile API call defined later.
-            // For now, let's assume session might have them or we start empty/from session extended fields.
         }
     }, [session])
 
