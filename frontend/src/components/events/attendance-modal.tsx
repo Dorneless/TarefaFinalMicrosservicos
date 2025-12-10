@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { EventResponseDTO, EventRegistrationResponseDTO } from "@/types/events"
-import { getEventRegistrations, markAttendance, adminRegisterUserByEmail, sendEventRegistrationNotification, sendAttendanceConfirmedNotification } from "@/lib/api"
+import { getEventRegistrations, markAttendance, adminRegisterUserByEmail } from "@/lib/api"
 import { X, Search, Check, X as XIcon, UserPlus, Loader2, RefreshCw, CloudOff, CloudUpload } from "lucide-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useOffline } from "@/context/offline-context"
@@ -71,21 +71,6 @@ export function AttendanceModal({ event, isOpen, onClose }: AttendanceModalProps
 
         try {
             await markAttendance(event.id, registration.userEmail, attended)
-
-            // Send notification if confirmed present
-            if (attended) {
-                try {
-                    await sendAttendanceConfirmedNotification({
-                        name: registration.userName,
-                        email: registration.userEmail,
-                        eventName: event.name,
-                        eventDate: new Date(event.eventDate).toLocaleDateString("pt-BR"),
-                    })
-                } catch (error) {
-                    console.error("Failed to send notification", error)
-                }
-            }
-
             // Invalidate to get fresh state
             queryClient.invalidateQueries({ queryKey: ["registrations", event.id] })
         } catch (err) {
@@ -110,27 +95,7 @@ export function AttendanceModal({ event, isOpen, onClose }: AttendanceModalProps
                 setNewUserEmail("")
                 // No need to refetch, local state updates immediately via context
             } else {
-                const response = await adminRegisterUserByEmail(event.id, newUserEmail)
-
-                // Send notification
-                try {
-                    // Response typically contains the created registration which should have user details
-                    // If response has name, use it. If not, try to use email part or default.
-                    // The API types aren't strictly typed here for response, assuming 'any' or check backend.
-                    // Let's assume response (RegistrationDTO) has userName and userEmail.
-                    const userName = response?.userName || newUserEmail.split("@")[0]
-
-                    await sendEventRegistrationNotification({
-                        name: userName,
-                        email: newUserEmail,
-                        eventName: event.name,
-                        eventDate: new Date(event.eventDate).toLocaleDateString("pt-BR"),
-                        eventLocation: event.location || "Online"
-                    })
-                } catch (error) {
-                    console.error("Failed to send notification", error)
-                }
-
+                await adminRegisterUserByEmail(event.id, newUserEmail)
                 setNewUserEmail("")
                 queryClient.invalidateQueries({ queryKey: ["registrations", event.id] })
             }
