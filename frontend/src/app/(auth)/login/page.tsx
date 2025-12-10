@@ -212,9 +212,13 @@ export default function LoginPage() {
                 <CardFooter className="flex justify-center">
                     <p className="text-sm text-gray-500">
                         Não tem uma conta?{" "}
-                        <Link href="/register" className="text-blue-500 hover:underline">
+                        Não tem uma conta?{" "}
+                        <span
+                            onClick={() => window.location.href = "/register"}
+                            className="text-blue-500 hover:underline cursor-pointer"
+                        >
                             Cadastre-se
-                        </Link>
+                        </span>
                     </p>
                 </CardFooter>
             </Card>

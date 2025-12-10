@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar, MapPin, Users } from "lucide-react";
 import Link from "next/link";
+import { useSync } from "@/contexts/sync-context";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,6 +20,7 @@ export default function DashboardPage() {
     const { data: session } = useSession();
     const [search, setSearch] = useState("");
     const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+    const { isOnline } = useSync();
 
     const { data: events = [], isLoading: loading, isError } = useQuery({
         queryKey: ["events"],
@@ -64,8 +66,6 @@ export default function DashboardPage() {
             </div>
         );
     }
-
-
 
     return (
         <div className="space-y-6">
@@ -124,8 +124,19 @@ export default function DashboardPage() {
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button asChild className="w-full">
-                                    <Link href={`/events/${event.id}`}>Ver Detalhes</Link>
+                                <Button
+                                    asChild={isOnline}
+                                    className="w-full"
+                                    onClick={!isOnline ? (e) => {
+                                        e.preventDefault();
+                                        window.location.href = `/events/${event.id}`;
+                                    } : undefined}
+                                >
+                                    {isOnline ? (
+                                        <Link href={`/events/${event.id}`}>Ver Detalhes</Link>
+                                    ) : (
+                                        <span>Ver Detalhes</span>
+                                    )}
                                 </Button>
                             </CardFooter>
                         </Card>

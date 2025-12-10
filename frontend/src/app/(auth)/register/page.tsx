@@ -129,9 +129,12 @@ export default function RegisterPage() {
                 <CardFooter className="flex justify-center">
                     <p className="text-sm text-gray-500">
                         Já tem uma conta?{" "}
-                        <Link href="/login" className="text-blue-500 hover:underline">
+                        <span
+                            onClick={() => window.location.href = "/login"}
+                            className="text-blue-500 hover:underline cursor-pointer"
+                        >
                             Entrar
-                        </Link>
+                        </span>
                     </p>
                 </CardFooter>
             </Card>

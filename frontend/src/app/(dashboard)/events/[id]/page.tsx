@@ -260,8 +260,14 @@ export default function EventDetailsPage() {
         return (
             <div className="text-center py-12">
                 <p className="text-muted-foreground text-lg">Evento não encontrado.</p>
-                <Button asChild className="mt-4">
-                    <Link href="/">Voltar para Eventos</Link>
+                <Button asChild={isOnline} className="mt-4">
+                    {isOnline ? (
+                        <Link href="/">Voltar para Eventos</Link>
+                    ) : (
+                        <span onClick={() => window.location.href = "/"} className="cursor-pointer">
+                            Voltar para Eventos
+                        </span>
+                    )}
                 </Button>
             </div>
         );
@@ -269,10 +275,16 @@ export default function EventDetailsPage() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
-            <Button variant="ghost" asChild className="mb-4 pl-0 hover:bg-transparent hover:text-primary">
-                <Link href="/" className="flex items-center gap-2">
-                    <ArrowLeft className="h-4 w-4" /> Voltar para Eventos
-                </Link>
+            <Button variant="ghost" asChild={isOnline} className="mb-4 pl-0 hover:bg-transparent hover:text-primary">
+                {isOnline ? (
+                    <Link href="/" className="flex items-center gap-2">
+                        <ArrowLeft className="h-4 w-4" /> Voltar para Eventos
+                    </Link>
+                ) : (
+                    <span onClick={() => window.location.href = "/"} className="flex items-center gap-2 cursor-pointer">
+                        <ArrowLeft className="h-4 w-4" /> Voltar para Eventos
+                    </span>
+                )}
             </Button>
 
             <Card>
@@ -302,11 +314,23 @@ export default function EventDetailsPage() {
 
                     {session?.user?.role === "ADMIN" && (
                         <div className="flex gap-2 mr-auto">
-                            <Button variant="outline" asChild>
-                                <Link href={`/admin/events/${event.id}/edit`}>Editar Evento</Link>
+                            <Button variant="outline" asChild={isOnline}>
+                                {isOnline ? (
+                                    <Link href={`/admin/events/${event.id}/edit`}>Editar Evento</Link>
+                                ) : (
+                                    <span onClick={() => window.location.href = `/admin/events/${event.id}/edit`} className="cursor-pointer">
+                                        Editar Evento
+                                    </span>
+                                )}
                             </Button>
-                            <Button variant="outline" asChild>
-                                <Link href={`/admin/events/${event.id}/attendance`}>Gerenciar Presença</Link>
+                            <Button variant="outline" asChild={isOnline}>
+                                {isOnline ? (
+                                    <Link href={`/admin/events/${event.id}/attendance`}>Gerenciar Presença</Link>
+                                ) : (
+                                    <span onClick={() => window.location.href = `/admin/events/${event.id}/attendance`} className="cursor-pointer">
+                                        Gerenciar Presença
+                                    </span>
+                                )}
                             </Button>
                             <Dialog>
                                 <DialogTrigger asChild>
