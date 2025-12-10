@@ -12,7 +12,8 @@ export interface OfflineUser {
 }
 
 export interface AttendanceChange {
-    registrationId: string
+    eventId: string
+    email: string
     attended: boolean
     timestamp: number
 }
@@ -22,7 +23,7 @@ interface OfflineContextType {
     pendingUsers: OfflineUser[]
     attendanceQueue: AttendanceChange[]
     addOfflineUser: (eventId: string, email: string) => Promise<void>
-    toggleOfflineAttendance: (registrationId: string, attended: boolean) => Promise<void>
+    toggleOfflineAttendance: (eventId: string, email: string, attended: boolean) => Promise<void>
     syncChanges: () => Promise<void>
     hasPendingChanges: boolean
 }
@@ -71,15 +72,15 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         await set(PENDING_USERS_KEY, updated)
     }
 
-    const toggleOfflineAttendance = async (registrationId: string, attended: boolean) => {
+    const toggleOfflineAttendance = async (eventId: string, email: string, attended: boolean) => {
         // Check if there is already a change for this registration, update it if so
-        const existingIndex = attendanceQueue.findIndex(a => a.registrationId === registrationId)
+        const existingIndex = attendanceQueue.findIndex(a => a.eventId === eventId && a.email === email)
         let updated = [...attendanceQueue]
 
         if (existingIndex >= 0) {
-            updated[existingIndex] = { registrationId, attended, timestamp: Date.now() }
+            updated[existingIndex] = { eventId, email, attended, timestamp: Date.now() }
         } else {
-            updated.push({ registrationId, attended, timestamp: Date.now() })
+            updated.push({ eventId, email, attended, timestamp: Date.now() })
         }
 
         setAttendanceQueue(updated)
@@ -105,36 +106,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         // Sync Attendance
         for (const item of attendanceQueue) {
             try {
-                // If the registration ID is temporary (from a just-synced user), we might have a problem.
-                // However, the backend would need to return the real ID. 
-                // For now, assuming attendance is only for existing users OR we need to fetch registrations again.
-                // If we marked attendance for a "temp" user, we need to map the temp ID to the real ID.
-                // This logic is complex. 
-                // SIMPLIFICATION: We only support marking attendance offline for users who were ALREADY downloaded.
-                // OR, if we added a user offline, we assume we can't mark their attendance until we sync?
-                // The requirement says: "o admin também deve conseguir registrar presença para os usuários que já tinham carregados ... ou para este novo usuário que ele adicionou de forma offline"
-                // So... we need to handle that.
-
-                // If it's a real registration ID (UUID), proceed.
-                // If it's a temp ID, we can't sync it yet UNLESS we just created it.
-                // We'll need to refetch registrations after syncing users to resolve IDs? 
-                // Or maybe `adminRegisterUserByEmail` returns the new registration.
-
-                // Let's assume for now we try to sync. If 404, we keep it? 
-                // Actually, `adminRegisterUserByEmail` creates the registration.
-                // If we marked attendance for that user, we don't have their registration ID yet. 
-                // We likely used the `temp-ID` in the UI. 
-                // We can't send `temp-ID` to the backend.
-
-                // Refinment: When syncing users, we should try to get the new registration ID.
-                // But `adminRegisterUserByEmail` might not return it cleanly or we might need to look it up.
-
-                // Strategy: 
-                // 1. Sync all users.
-                // 2. Fetch latest registrations for relevant events? Expensive.
-                // 3. Just Try to mark attendance. If it fails, keep in queue?
-
-                await markAttendance(item.registrationId, item.attended)
+                await markAttendance(item.eventId, item.email, item.attended)
             } catch (error) {
                 console.error("Failed to sync attendance:", item, error)
                 attendanceFailed.push(item)

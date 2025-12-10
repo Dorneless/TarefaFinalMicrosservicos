@@ -82,6 +82,17 @@ public class EventRegistrationController {
         return ResponseEntity.ok(registrationService.markAttendance(registrationId, attendanceDTO));
     }
 
+    @PostMapping("/events/{eventId}/attendance-by-email")
+    @PreAuthorize("hasRole('ADMIN')")
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(summary = "Registrar presença em evento por email (apenas ADMIN)")
+    public ResponseEntity<EventRegistrationResponseDTO> markAttendanceByEmail(
+            @PathVariable UUID eventId,
+            @Valid @RequestBody com.microsservicos.eventsservice.dto.AttendanceByEmailDTO attendanceDTO) {
+        return ResponseEntity.ok(registrationService.markAttendanceByEmail(eventId, attendanceDTO.getEmail(),
+                new AttendanceDTO(attendanceDTO.getAttended())));
+    }
+
     @DeleteMapping("/registrations/{registrationId}")
     @PreAuthorize("isAuthenticated()")
     @SecurityRequirement(name = "bearer-jwt")

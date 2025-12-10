@@ -54,42 +54,30 @@ export function AttendanceModal({ event, isOpen, onClose }: AttendanceModalProps
 
     // Apply attendance queue overrides
     const processedRegistrations = allRegistrations.map(reg => {
-        // Find latest change for this registration
-        // There could be multiple, we want the last one? 
-        // My simple queue implies order. 
-        // Logic: find if there is a pending change for this registrationId
-        // In my context, I update the entry if it exists, so searching is safe.
-        const pendingChange = attendanceQueue.find(q => q.registrationId === reg.id)
+        const pendingChange = attendanceQueue.find(q => q.eventId === event?.id && q.email === reg.userEmail)
         if (pendingChange) {
             return { ...reg, attended: pendingChange.attended }
         }
         return reg
     })
 
-    async function handleAttendance(registrationId: string, attended: boolean) {
+    async function handleAttendance(registration: EventRegistrationResponseDTO, attended: boolean) {
         if (!event) return
 
         if (!isOnline) {
-            await toggleOfflineAttendance(registrationId, attended)
+            await toggleOfflineAttendance(event.id, registration.userEmail, attended)
             return
         }
 
-        // Optimistic update via React Query? 
-        // Or just use the queue for everything if we want consistency?
-        // Simpler: Use the queue for everything? No, if online we want immediate feedback from server.
-        // But the requirement says "when he register... must save locally... even if not synced...".
-        // It complicates mixing modes.
-        // Let's stick to: If Online -> Call API. If Offline -> Call Context.
-
         try {
-            await markAttendance(registrationId, attended)
+            await markAttendance(event.id, registration.userEmail, attended)
             // Invalidate to get fresh state
             queryClient.invalidateQueries({ queryKey: ["registrations", event.id] })
         } catch (err) {
             console.error(err)
             // Fallback to offline queue?
             if (confirm("Falha ao inidicar presença. Deseja salvar ação para sincronizar depois?")) {
-                await toggleOfflineAttendance(registrationId, attended)
+                await toggleOfflineAttendance(event.id, registration.userEmail, attended)
             }
         }
     }
@@ -251,7 +239,7 @@ export function AttendanceModal({ event, isOpen, onClose }: AttendanceModalProps
                                             <td className="px-4 py-3 text-gray-500">{reg.userEmail}</td>
                                             <td className="px-4 py-3 text-center">
                                                 <button
-                                                    onClick={() => handleAttendance(reg.id, !reg.attended)}
+                                                    onClick={() => handleAttendance(reg, !reg.attended)}
                                                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${reg.attended
                                                         ? "bg-green-100 text-green-700 hover:bg-green-200"
                                                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"

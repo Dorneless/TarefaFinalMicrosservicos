@@ -88,10 +88,10 @@ export async function registerForEvent(eventId: string) {
     })
 }
 
-export async function markAttendance(registrationId: string, attended: boolean) {
-    return fetchWithAuth(`${API_EVENTS_URL}/api/registrations/${registrationId}/attendance`, {
+export async function markAttendance(eventId: string, email: string, attended: boolean) {
+    return fetchWithAuth(`${API_EVENTS_URL}/api/events/${eventId}/attendance-by-email`, {
         method: "POST",
-        body: JSON.stringify({ attended }),
+        body: JSON.stringify({ email, attended }),
     })
 }
 
