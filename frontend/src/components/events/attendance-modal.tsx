@@ -113,7 +113,15 @@ export function AttendanceModal({ event, isOpen, onClose }: AttendanceModalProps
             }
         } catch (err) {
             console.error(err)
-            setError("Erro ao cadastrar usuário.")
+            // If request fails, maybe we are offline effectively?
+            // Ask user if they want to save offline
+            if (confirm("Falha na requisição. Deseja salvar este usuário offline para sincronizar depois?")) {
+                await addOfflineUser(event.id, newUserEmail)
+                setNewUserEmail("")
+                setError(null)
+            } else {
+                setError("Erro ao cadastrar usuário.")
+            }
         } finally {
             setRegisteringUser(false)
         }
