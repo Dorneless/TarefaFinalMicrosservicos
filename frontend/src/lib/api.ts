@@ -183,3 +183,65 @@ export async function downloadCertificateByCode(code: string) {
     }
     return res.blob()
 }
+
+// Notifications API
+
+const API_NOTIFICATIONS_URL = process.env.NEXT_PUBLIC_API_NOTIFICATION_URL
+
+export interface EventRegistrationDto {
+    name: string;
+    email: string;
+    eventName: string;
+    eventDate: string;
+    eventLocation: string;
+}
+
+export interface EventCancellationDto {
+    name: string;
+    email: string;
+    eventName: string;
+    eventDate: string;
+}
+
+export interface AttendanceConfirmedDto {
+    name: string;
+    email: string;
+    eventName: string;
+    eventDate: string;
+}
+
+export interface CertificateIssuedDto {
+    email: string;
+    userName: string;
+    eventName: string;
+    certificateCode: string;
+    pdfPath?: string; // Optional since we might not have it or it might be a link
+}
+
+export async function sendEventRegistrationNotification(data: EventRegistrationDto) {
+    return fetchWithAuth(`${API_NOTIFICATIONS_URL}/api/notifications/event-registration`, {
+        method: "POST",
+        body: JSON.stringify(data),
+    })
+}
+
+export async function sendEventCancellationNotification(data: EventCancellationDto) {
+    return fetchWithAuth(`${API_NOTIFICATIONS_URL}/api/notifications/event-cancellation`, {
+        method: "POST",
+        body: JSON.stringify(data),
+    })
+}
+
+export async function sendAttendanceConfirmedNotification(data: AttendanceConfirmedDto) {
+    return fetchWithAuth(`${API_NOTIFICATIONS_URL}/api/notifications/attendance-confirmed`, {
+        method: "POST",
+        body: JSON.stringify(data),
+    })
+}
+
+export async function sendCertificateIssuedNotification(data: CertificateIssuedDto) {
+    return fetchWithAuth(`${API_NOTIFICATIONS_URL}/api/notifications/certificate-issued`, {
+        method: "POST",
+        body: JSON.stringify(data),
+    })
+}
