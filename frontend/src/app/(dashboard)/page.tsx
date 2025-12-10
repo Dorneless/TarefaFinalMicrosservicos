@@ -1,133 +1,143 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { eventsService } from "@/lib/api";
-import { Event } from "@/types";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Calendar, MapPin, Users } from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { OfflinePreloader } from "@/components/offline-preloader";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { Calendar, MapPin, Users, ArrowRight, Loader2 } from 'lucide-react';
+import { eventsService } from '@/lib/api';
+import { Event } from '@/types';
+import { formatDate } from '@/lib/utils';
+import { setCache, getCache } from '@/lib/offline-store';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+
+const CACHE_KEY = 'events-list';
 
 export default function DashboardPage() {
-    const { data: session } = useSession();
-    const router = useRouter();
-    const [search, setSearch] = useState("");
-    const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+    const [cachedEvents, setCachedEvents] = useState<Event[] | null>(null);
 
-    const { data: events = [], isLoading: loading, isError } = useQuery({
-        queryKey: ["events"],
+    // Load cached data on mount
+    useEffect(() => {
+        getCache<Event[]>(CACHE_KEY).then(setCachedEvents);
+    }, []);
+
+    const { data: events, isLoading, error } = useQuery({
+        queryKey: ['events'],
         queryFn: async () => {
-            const response = await eventsService.get<Event[]>("/events");
+            const response = await eventsService.get<Event[]>('/events/upcoming');
+            // Cache the data for offline use
+            await setCache(CACHE_KEY, response.data);
             return response.data;
         },
-        staleTime: 0, // Always try to fetch fresh data
-        gcTime: 1000 * 60 * 60 * 24, // Keep in cache for 24h
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        initialData: cachedEvents || undefined,
     });
 
-    useEffect(() => {
-        if (isError) {
-            toast.error("Falha ao carregar eventos. Verifique sua conexão.");
-        }
-    }, [isError]);
+    const displayEvents = events || cachedEvents;
 
-    useEffect(() => {
-        const lowerSearch = search.toLowerCase();
-        const filtered = events.filter(
-            (event) =>
-                event.name.toLowerCase().includes(lowerSearch) ||
-                event.description.toLowerCase().includes(lowerSearch) ||
-                event.location.toLowerCase().includes(lowerSearch)
-        );
-        setFilteredEvents(filtered);
-    }, [search, events]);
-
-    if (loading) {
+    if (isLoading && !displayEvents) {
         return (
-            <div className="flex items-center justify-center h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center space-y-4">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                    <p className="text-muted-foreground">Carregando eventos...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error && !displayEvents) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center space-y-4">
+                    <p className="text-muted-foreground">Erro ao carregar eventos.</p>
+                    <p className="text-sm text-muted-foreground">
+                        Verifique sua conexão e tente novamente.
+                    </p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Eventos</h1>
-                    <p className="text-muted-foreground">
-                        Descubra e inscreva-se nos próximos eventos.
-                    </p>
-                </div>
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                    <div className="w-full md:w-72">
-                        <Input
-                            placeholder="Buscar eventos..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
-                    {session?.user?.role === "ADMIN" && (
-                        <Button asChild>
-                            <Link href="/admin/events/create">Criar Evento</Link>
-                        </Button>
-                    )}
-                </div>
+        <div className="space-y-8">
+            <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tight">Eventos</h1>
+                <p className="text-muted-foreground">
+                    Confira os próximos eventos disponíveis para inscrição
+                </p>
             </div>
 
-            {filteredEvents.length === 0 ? (
-                <div className="text-center py-12">
-                    <p className="text-muted-foreground text-lg">Nenhum evento encontrado.</p>
-                </div>
+            {!displayEvents || displayEvents.length === 0 ? (
+                <Card className="text-center py-12">
+                    <CardContent>
+                        <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">Nenhum evento disponível</h3>
+                        <p className="text-muted-foreground">
+                            Novos eventos serão exibidos aqui quando estiverem disponíveis.
+                        </p>
+                    </CardContent>
+                </Card>
             ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredEvents.map((event) => (
-                        <Card key={event.id} className="flex flex-col h-full hover:shadow-lg transition-shadow duration-300">
-                            <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <CardTitle className="line-clamp-1">{event.name}</CardTitle>
-                                    {event.active ? <Badge variant="default">Ativo</Badge> : <Badge variant="secondary">Inativo</Badge>}
-                                </div>
-                                <CardDescription className="line-clamp-2">
-                                    {event.description}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1 space-y-2">
-                                <div className="flex items-center text-sm text-muted-foreground">
-                                    <Calendar className="mr-2 h-4 w-4" />
-                                    {format(new Date(event.eventDate), "PPP p", { locale: ptBR })}
-                                </div>
-                                <div className="flex items-center text-sm text-muted-foreground">
-                                    <MapPin className="mr-2 h-4 w-4" />
-                                    {event.location}
-                                </div>
-                                <div className="flex items-center text-sm text-muted-foreground">
-                                    <Users className="mr-2 h-4 w-4" />
-                                    Vagas: {event.maxCapacity}
-                                </div>
-                            </CardContent>
-                            <CardFooter>
-                                <Button
-                                    className="w-full"
-                                    onClick={() => router.push(`/events/${event.id}`)}
-                                >
-                                    Ver Detalhes
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {displayEvents.map((event) => (
+                        <EventCard key={event.id} event={event} />
                     ))}
                 </div>
             )}
-
-            <OfflinePreloader events={filteredEvents} />
         </div>
+    );
+}
+
+function EventCard({ event }: { event: Event }) {
+    const eventDate = new Date(event.eventDate);
+    const isPast = eventDate < new Date();
+
+    return (
+        <Card className="group overflow-hidden transition-all hover:shadow-lg hover:border-primary/50">
+            <CardHeader className="space-y-3">
+                <div className="flex items-start justify-between">
+                    <Badge variant={isPast ? 'secondary' : 'default'}>
+                        {isPast ? 'Encerrado' : 'Aberto'}
+                    </Badge>
+                </div>
+                <CardTitle className="line-clamp-2 group-hover:text-primary transition-colors">
+                    {event.name}
+                </CardTitle>
+                <CardDescription className="line-clamp-3">
+                    {event.description}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatDate(event.eventDate)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span className="line-clamp-1">{event.location}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>Capacidade: {event.maxCapacity} pessoas</span>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Link href={`/events/${event.id}`} className="w-full">
+                    <Button className="w-full group-hover:bg-primary/90">
+                        Ver Detalhes
+                        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                </Link>
+            </CardFooter>
+        </Card>
     );
 }

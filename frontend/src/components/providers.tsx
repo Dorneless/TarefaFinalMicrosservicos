@@ -1,26 +1,46 @@
-"use client";
+'use client';
 
-import { SessionProvider } from "next-auth/react";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { queryClient, persister } from "@/lib/react-query";
+import { SessionProvider } from 'next-auth/react';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
 
-import { SyncProvider } from "@/contexts/sync-context";
+interface ProvidersProps {
+    children: React.ReactNode;
+}
 
-import { useEffect } from "react";
-
-export function Providers({ children }: { children: React.ReactNode }) {
-
+export function Providers({ children }: ProvidersProps) {
+    const [queryClient] = useState(
+        () =>
+            new QueryClient({
+                defaultOptions: {
+                    queries: {
+                        staleTime: 1000 * 60 * 5, // 5 minutes
+                        gcTime: 1000 * 60 * 60 * 24, // 24 hours (formerly cacheTime)
+                        retry: (failureCount, error) => {
+                            // Don't retry on 4xx errors
+                            if (error instanceof Error && error.message.includes('4')) {
+                                return false;
+                            }
+                            return failureCount < 3;
+                        },
+                    },
+                },
+            })
+    );
 
     return (
-        <PersistQueryClientProvider
-            client={queryClient}
-            persistOptions={{ persister }}
-        >
-            <SessionProvider>
-                <SyncProvider>
+        <SessionProvider>
+            <QueryClientProvider client={queryClient}>
+                <NextThemesProvider
+                    attribute="class"
+                    defaultTheme="dark"
+                    enableSystem
+                    disableTransitionOnChange
+                >
                     {children}
-                </SyncProvider>
-            </SessionProvider>
-        </PersistQueryClientProvider>
+                </NextThemesProvider>
+            </QueryClientProvider>
+        </SessionProvider>
     );
 }

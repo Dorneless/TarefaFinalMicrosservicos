@@ -1,151 +1,106 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
-import { eventsService, certificateApi, notificationService } from "@/lib/api";
-import { EventRegistration } from "@/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { toast } from "sonner";
-import { CalendarCheck, XCircle, Download } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+import { ClipboardList, Calendar, MapPin, Check, X, Loader2 } from 'lucide-react';
+import { eventsService } from '@/lib/api';
+import { EventRegistration, Event } from '@/types';
+import { formatDate } from '@/lib/utils';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function MyRegistrationsPage() {
-    const { data: session } = useSession();
-    const queryClient = useQueryClient();
-    const [cancelling, setCancelling] = useState<string | null>(null);
-
-    const { data: registrations = [], isLoading: loading } = useQuery({
-        queryKey: ["my-registrations"],
+    const { data: registrations, isLoading } = useQuery({
+        queryKey: ['my-registrations'],
         queryFn: async () => {
-            const response = await eventsService.get<EventRegistration[]>("/my-events");
+            const response = await eventsService.get<EventRegistration[]>('/my-events');
             return response.data;
         },
     });
 
-    const handleGenerateCertificate = async (eventId: string) => {
-        try {
-            const response = await certificateApi.post(
-                "/certificates/issue",
-                { eventId },
-                { responseType: "blob" }
-            );
-
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement("a");
-            link.href = url;
-            link.setAttribute("download", `certificado-${eventId}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            toast.success("Certificado gerado com sucesso!");
-        } catch (error) {
-            console.error("Failed to generate certificate:", error);
-            toast.error("Falha ao gerar certificado.");
-        }
-    };
-
-    const handleCancelRegistration = async (registrationId: string) => {
-        setCancelling(registrationId);
-        try {
-            await eventsService.delete(`/registrations/${registrationId}`);
-
-            // Send cancellation email
-            const canceledReg = registrations.find(r => r.id === registrationId);
-            if (canceledReg && session?.user) {
-                try {
-                    await notificationService.post("/notifications/event-cancellation", {
-                        name: session.user.name,
-                        email: session.user.email,
-                        eventName: canceledReg.eventName,
-                        eventDate: new Date().toISOString() // Or available date
-                    });
-                } catch (emailError) {
-                    console.error("Failed to send cancellation email:", emailError);
-                }
-            }
-
-            toast.success("Inscrição cancelada com sucesso!");
-            queryClient.invalidateQueries({ queryKey: ["my-registrations"] });
-        } catch (error) {
-            console.error("Failed to cancel registration:", error);
-            toast.error("Falha ao cancelar inscrição.");
-        } finally {
-            setCancelling(null);
-        }
-    };
-
-    if (loading) {
+    if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div>
+        <div className="space-y-8">
+            <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">Minhas Inscrições</h1>
                 <p className="text-muted-foreground">
-                    Veja suas inscrições em eventos e status de presença.
+                    Acompanhe seus eventos e status de participação
                 </p>
             </div>
 
-            {registrations.length === 0 ? (
-                <div className="text-center py-12">
-                    <p className="text-muted-foreground text-lg">Você ainda não tem inscrições.</p>
-                </div>
+            {!registrations || registrations.length === 0 ? (
+                <Card className="text-center py-12">
+                    <CardContent>
+                        <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">Nenhuma inscrição</h3>
+                        <p className="text-muted-foreground mb-4">
+                            Você ainda não se inscreveu em nenhum evento.
+                        </p>
+                        <Link href="/">
+                            <Button>Ver Eventos Disponíveis</Button>
+                        </Link>
+                    </CardContent>
+                </Card>
             ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {registrations.map((reg) => (
-                        <Card key={reg.id}>
-                            <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <CardTitle className="line-clamp-1">{reg.eventName}</CardTitle>
-                                    {reg.attended ? (
-                                        <Badge className="bg-green-500">Presente</Badge>
-                                    ) : (
-                                        <Badge variant="outline">Inscrito</Badge>
-                                    )}
-                                </div>
-                                <CardDescription>
-                                    Inscrito em {format(new Date(reg.registeredAt || new Date()), "PPP", { locale: ptBR })}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    {reg.attended ? <CalendarCheck className="h-4 w-4 text-green-500" /> : <CalendarCheck className="h-4 w-4" />}
-                                    <span>Status: {reg.attended ? "Confirmado" : "Presença Pendente"}</span>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex flex-col gap-2">
-                                <Button
-                                    className="w-full"
-                                    disabled={!reg.attended}
-                                    onClick={() => handleGenerateCertificate(reg.eventId)}
-                                >
-                                    <Download className="mr-2 h-4 w-4" />
-                                    {reg.attended ? "Gerar Certificado" : "Aguardando Presença"}
-                                </Button>
-                                {!reg.attended && (
-                                    <Button
-                                        variant="destructive"
-                                        className="w-full"
-                                        disabled={cancelling === reg.id}
-                                        onClick={() => handleCancelRegistration(reg.id)}
-                                    >
-                                        {cancelling === reg.id ? "Cancelando..." : "Cancelar Inscrição"}
-                                    </Button>
-                                )}
-                            </CardFooter>
-                        </Card>
+                <div className="grid gap-4">
+                    {registrations.map((registration) => (
+                        <RegistrationCard key={registration.id} registration={registration} />
                     ))}
                 </div>
             )}
         </div>
+    );
+}
+
+function RegistrationCard({ registration }: { registration: EventRegistration }) {
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                    <div className="space-y-1">
+                        <CardTitle className="text-xl">
+                            {registration.eventName || 'Evento'}
+                        </CardTitle>
+                        <CardDescription>
+                            Inscrito em {formatDate(registration.registeredAt || '')}
+                        </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                        <Badge variant={registration.status === 'CONFIRMED' ? 'default' : 'destructive'}>
+                            {registration.status === 'CONFIRMED' ? 'Confirmado' : 'Cancelado'}
+                        </Badge>
+                        {registration.attended && (
+                            <Badge variant="success">
+                                <Check className="h-3 w-3 mr-1" />
+                                Presença Confirmada
+                            </Badge>
+                        )}
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-wrap gap-4">
+                    <Link href={`/events/${registration.eventId}`}>
+                        <Button variant="outline" size="sm">
+                            Ver Evento
+                        </Button>
+                    </Link>
+                </div>
+            </CardContent>
+        </Card>
     );
 }

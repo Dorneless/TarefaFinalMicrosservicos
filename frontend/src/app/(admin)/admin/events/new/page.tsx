@@ -1,21 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {
-    Calendar,
-    MapPin,
-    Users,
-    FileText,
-    Loader2,
-    ArrowLeft,
-} from 'lucide-react';
+import { Calendar, MapPin, Users, FileText, Loader2, ArrowLeft } from 'lucide-react';
 import { eventsService } from '@/lib/api';
-import { Event } from '@/types';
+import { useOnlineStatus } from '@/hooks/use-online-status';
+import { addPendingAction } from '@/lib/offline-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,20 +31,10 @@ const eventSchema = z.object({
 
 type EventForm = z.infer<typeof eventSchema>;
 
-export default function EditEventPage() {
-    const params = useParams();
+export default function NewEventPage() {
     const router = useRouter();
-    const queryClient = useQueryClient();
-    const eventId = params.id as string;
+    const isOnline = useOnlineStatus();
     const [isLoading, setIsLoading] = useState(false);
-
-    const { data: event, isLoading: isLoadingEvent } = useQuery({
-        queryKey: ['event', eventId],
-        queryFn: async () => {
-            const response = await eventsService.get<Event>(`/events/${eventId}`);
-            return response.data;
-        },
-    });
 
     const form = useForm<EventForm>({
         resolver: zodResolver(eventSchema),
@@ -64,42 +47,29 @@ export default function EditEventPage() {
         },
     });
 
-    // Set form values when event loads
-    useEffect(() => {
-        if (event) {
-            form.reset({
-                name: event.name,
-                description: event.description,
-                eventDate: event.eventDate.slice(0, 16), // Format for datetime-local
-                location: event.location,
-                maxCapacity: event.maxCapacity,
-            });
-        }
-    }, [event, form]);
-
     const onSubmit = async (data: EventForm) => {
         setIsLoading(true);
         try {
-            await eventsService.put(`/events/${eventId}`, data);
-            toast.success('Evento atualizado com sucesso!');
-            queryClient.invalidateQueries({ queryKey: ['event', eventId] });
-            queryClient.invalidateQueries({ queryKey: ['admin-events'] });
-            router.push('/admin/events');
+            if (isOnline) {
+                await eventsService.post('/events', data);
+                toast.success('Evento criado com sucesso!');
+                router.push('/admin/events');
+            } else {
+                await addPendingAction(
+                    'CREATE_EVENT',
+                    data,
+                    `Criar evento: ${data.name}`
+                );
+                toast.info('Evento será criado quando você estiver online');
+                router.push('/admin/events');
+            }
         } catch (error: any) {
-            const message = error.response?.data?.message || 'Erro ao atualizar evento';
+            const message = error.response?.data?.message || 'Erro ao criar evento';
             toast.error(message);
         } finally {
             setIsLoading(false);
         }
     };
-
-    if (isLoadingEvent) {
-        return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
-    }
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -110,8 +80,8 @@ export default function EditEventPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Editar Evento</CardTitle>
-                    <CardDescription>Atualize os dados do evento</CardDescription>
+                    <CardTitle>Novo Evento</CardTitle>
+                    <CardDescription>Preencha os dados para criar um novo evento</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -209,10 +179,10 @@ export default function EditEventPage() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Salvando...
+                                        Criando...
                                     </>
                                 ) : (
-                                    'Salvar Alterações'
+                                    'Criar Evento'
                                 )}
                             </Button>
                             <Button

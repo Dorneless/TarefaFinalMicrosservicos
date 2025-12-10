@@ -20,9 +20,26 @@ const createApiClient = (baseURL: string) => {
     return api;
 };
 
-export const userService = createApiClient(process.env.NEXT_PUBLIC_USER_API_URL || 'http://localhost:8080/api');
-export const eventsService = createApiClient(process.env.NEXT_PUBLIC_EVENTS_API_URL || 'http://localhost:8081/api');
-export const notificationService = createApiClient(process.env.NEXT_PUBLIC_NOTIFICATION_API_URL || 'http://localhost:8082/api');
-export const certificateService = createApiClient(process.env.NEXT_PUBLIC_CERTIFICATE_API_URL || 'http://localhost:8083/certificates');
-export const certificateApi = createApiClient(process.env.NEXT_PUBLIC_CERTIFICATE_API_BASE_URL || 'http://localhost:8083');
-export const logsApi = createApiClient(process.env.NEXT_PUBLIC_LOGS_API_URL || 'http://localhost:8084');
+export const userService = createApiClient(
+    process.env.NEXT_PUBLIC_USER_API_URL || 'http://localhost:8080/api'
+);
+
+export const eventsService = createApiClient(
+    process.env.NEXT_PUBLIC_EVENTS_API_URL || 'http://localhost:8081/api'
+);
+
+export const notificationService = createApiClient(
+    process.env.NEXT_PUBLIC_NOTIFICATION_API_URL || 'http://localhost:8082/api'
+);
+
+export const certificateService = createApiClient(
+    process.env.NEXT_PUBLIC_CERTIFICATE_API_URL || 'http://localhost:8083/certificates'
+);
+
+export const logsService = createApiClient(
+    process.env.NEXT_PUBLIC_LOGS_API_URL || 'http://localhost:8084'
+);
+
+// Base URL for certificate downloads
+export const certificateBaseUrl =
+    process.env.NEXT_PUBLIC_CERTIFICATE_API_BASE_URL || 'http://localhost:8083';

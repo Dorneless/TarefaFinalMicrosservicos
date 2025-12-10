@@ -1,226 +1,338 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState, Suspense } from 'react';
+import { signIn } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Mail, Lock, Key, Loader2, Send } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { userService } from "@/lib/api";
-import { useQueryClient } from "@tanstack/react-query";
-import { persister } from "@/lib/react-query";
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
+import { userService } from '@/lib/api';
 
-const formSchema = z.object({
-    email: z.string().email({ message: "Endereço de email inválido" }),
-    password: z.string().optional(),
-    code: z.string().optional(),
+const passwordSchema = z.object({
+    email: z.string().email('Email inválido'),
+    password: z.string().min(1, 'Senha é obrigatória'),
 });
 
-export default function LoginPage() {
-    const router = useRouter();
-    const queryClient = useQueryClient();
-    const [isLoading, setIsLoading] = useState(false);
-    const [loginMode, setLoginMode] = useState<"password" | "code">("password");
+const codeSchema = z.object({
+    email: z.string().email('Email inválido'),
+    code: z.string().min(6, 'Código deve ter 6 dígitos').max(6, 'Código deve ter 6 dígitos'),
+});
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            email: "",
-            password: "",
-            code: "",
-        },
+type PasswordForm = z.infer<typeof passwordSchema>;
+type CodeForm = z.infer<typeof codeSchema>;
+
+function LoginForm() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams.get('callbackUrl') || '/';
+
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSendingCode, setIsSendingCode] = useState(false);
+    const [codeSent, setCodeSent] = useState(false);
+    const [codeEmail, setCodeEmail] = useState('');
+
+    const passwordForm = useForm<PasswordForm>({
+        resolver: zodResolver(passwordSchema),
+        defaultValues: { email: '', password: '' },
     });
 
-    async function onRequestCode() {
-        const email = form.getValues("email");
-        if (!email) {
-            form.setError("email", { message: "Email é obrigatório para solicitar o código" });
-            return;
-        }
+    const codeForm = useForm<CodeForm>({
+        resolver: zodResolver(codeSchema),
+        defaultValues: { email: '', code: '' },
+    });
 
-        // Basic email validation
-        const emailSchema = z.string().email();
-        const result = emailSchema.safeParse(email);
-        if (!result.success) {
-            form.setError("email", { message: "Endereço de email inválido" });
-            return;
-        }
-
+    const onPasswordSubmit = async (data: PasswordForm) => {
         setIsLoading(true);
         try {
-            await userService.post("/auth/request-code", { email });
-            toast.success("Código de verificação enviado para seu email!");
-            setLoginMode("code");
-        } catch (error) {
-            console.error("Failed to request code:", error);
-            toast.error("Falha ao enviar código de verificação. Tente novamente.");
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsLoading(true);
-
-        // Clear cache before login to ensure fresh state
-        await persister.removeClient();
-        queryClient.removeQueries();
-
-        try {
-            let result;
-            if (loginMode === "password") {
-                if (!values.password) {
-                    form.setError("password", { message: "Senha é obrigatória" });
-                    setIsLoading(false);
-                    return;
-                }
-                result = await signIn("credentials", {
-                    email: values.email,
-                    password: values.password,
-                    redirect: false,
-                });
-            } else {
-                if (!values.code) {
-                    form.setError("code", { message: "Código é obrigatório" });
-                    setIsLoading(false);
-                    return;
-                }
-                result = await signIn("credentials", {
-                    email: values.email,
-                    code: values.code,
-                    redirect: false,
-                });
-            }
+            const result = await signIn('credentials', {
+                email: data.email,
+                password: data.password,
+                redirect: false,
+            });
 
             if (result?.error) {
-                toast.error("Login falhou. Verifique suas credenciais.");
+                toast.error('Email ou senha incorretos');
             } else {
-                toast.success("Login realizado com sucesso!");
-                router.push("/");
+                toast.success('Login realizado com sucesso!');
+                router.push(callbackUrl);
+                router.refresh();
             }
         } catch (error) {
-            toast.error("Ocorreu um erro. Tente novamente.");
+            toast.error('Erro ao fazer login. Tente novamente.');
         } finally {
             setIsLoading(false);
         }
-    }
+    };
+
+    const onRequestCode = async () => {
+        const email = codeForm.getValues('email');
+
+        if (!email) {
+            codeForm.setError('email', { message: 'Email é obrigatório' });
+            return;
+        }
+
+        const emailResult = z.string().email().safeParse(email);
+        if (!emailResult.success) {
+            codeForm.setError('email', { message: 'Email inválido' });
+            return;
+        }
+
+        setIsSendingCode(true);
+        try {
+            await userService.post('/auth/request-code', { email });
+            toast.success('Código enviado para seu email!');
+            setCodeSent(true);
+            setCodeEmail(email);
+        } catch (error) {
+            toast.error('Erro ao enviar código. Verifique o email e tente novamente.');
+        } finally {
+            setIsSendingCode(false);
+        }
+    };
+
+    const onCodeSubmit = async (data: CodeForm) => {
+        setIsLoading(true);
+        try {
+            const result = await signIn('credentials', {
+                email: data.email,
+                code: data.code,
+                redirect: false,
+            });
+
+            if (result?.error) {
+                toast.error('Código inválido ou expirado');
+            } else {
+                toast.success('Login realizado com sucesso!');
+                router.push(callbackUrl);
+                router.refresh();
+            }
+        } catch (error) {
+            toast.error('Erro ao fazer login. Tente novamente.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-            <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle>Entrar</CardTitle>
-                    <CardDescription>Insira suas credenciais para acessar sua conta</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex space-x-2 mb-4">
-                        <Button
-                            type="button"
-                            variant={loginMode === "password" ? "default" : "outline"}
-                            className="flex-1"
-                            onClick={() => setLoginMode("password")}
-                        >
+        <Card className="w-full max-w-md">
+            <CardHeader className="space-y-1 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                    <Lock className="h-7 w-7" />
+                </div>
+                <CardTitle className="text-2xl font-bold">Entrar</CardTitle>
+                <CardDescription>
+                    Escolha como deseja acessar sua conta
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Tabs defaultValue="password" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                        <TabsTrigger value="password" className="gap-2">
+                            <Lock className="h-4 w-4" />
                             Senha
-                        </Button>
-                        <Button
-                            type="button"
-                            variant={loginMode === "code" ? "default" : "outline"}
-                            className="flex-1"
-                            onClick={() => setLoginMode("code")}
-                        >
-                            Código de Acesso
-                        </Button>
-                    </div>
+                        </TabsTrigger>
+                        <TabsTrigger value="code" className="gap-2">
+                            <Key className="h-4 w-4" />
+                            Código
+                        </TabsTrigger>
+                    </TabsList>
 
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="email@exemplo.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            {loginMode === "password" ? (
-                                <FormField
-                                    control={form.control}
-                                    name="password"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Senha</FormLabel>
-                                            <FormControl>
-                                                <Input type="password" placeholder="******" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            ) : (
-                                <div className="space-y-2">
-                                    <FormField
-                                        control={form.control}
-                                        name="code"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Código de Verificação</FormLabel>
-                                                <div className="flex space-x-2">
-                                                    <FormControl>
-                                                        <Input placeholder="123456" {...field} />
-                                                    </FormControl>
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        onClick={onRequestCode}
-                                                        disabled={isLoading}
-                                                    >
-                                                        Enviar Código
-                                                    </Button>
-                                                </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
+                    <TabsContent value="password">
+                        <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="password-email">Email</Label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        id="password-email"
+                                        type="email"
+                                        placeholder="seu@email.com"
+                                        className="pl-10"
+                                        {...passwordForm.register('email')}
                                     />
                                 </div>
-                            )}
+                                {passwordForm.formState.errors.email && (
+                                    <p className="text-sm text-destructive">
+                                        {passwordForm.formState.errors.email.message}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Senha</Label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        className="pl-10"
+                                        {...passwordForm.register('password')}
+                                    />
+                                </div>
+                                {passwordForm.formState.errors.password && (
+                                    <p className="text-sm text-destructive">
+                                        {passwordForm.formState.errors.password.message}
+                                    </p>
+                                )}
+                            </div>
 
                             <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading ? "Entrando..." : "Entrar"}
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Entrando...
+                                    </>
+                                ) : (
+                                    'Entrar'
+                                )}
                             </Button>
                         </form>
-                    </Form>
-                </CardContent>
-                <CardFooter className="flex justify-center">
-                    <p className="text-sm text-gray-500">
-                        Não tem uma conta?{" "}
-                        <Link
-                            href="/register"
-                            className="text-blue-500 hover:underline"
-                        >
-                            Cadastre-se
-                        </Link>
-                    </p>
-                </CardFooter>
-            </Card>
+                    </TabsContent>
+
+                    <TabsContent value="code">
+                        <form onSubmit={codeForm.handleSubmit(onCodeSubmit)} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="code-email">Email</Label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        id="code-email"
+                                        type="email"
+                                        placeholder="seu@email.com"
+                                        className="pl-10"
+                                        disabled={codeSent}
+                                        {...codeForm.register('email')}
+                                    />
+                                </div>
+                                {codeForm.formState.errors.email && (
+                                    <p className="text-sm text-destructive">
+                                        {codeForm.formState.errors.email.message}
+                                    </p>
+                                )}
+                            </div>
+
+                            {!codeSent ? (
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="w-full"
+                                    onClick={onRequestCode}
+                                    disabled={isSendingCode}
+                                >
+                                    {isSendingCode ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Enviando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="mr-2 h-4 w-4" />
+                                            Enviar Código
+                                        </>
+                                    )}
+                                </Button>
+                            ) : (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="code">Código de Verificação</Label>
+                                        <div className="relative">
+                                            <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                id="code"
+                                                type="text"
+                                                placeholder="000000"
+                                                className="pl-10 text-center tracking-widest text-lg"
+                                                maxLength={6}
+                                                {...codeForm.register('code')}
+                                            />
+                                        </div>
+                                        {codeForm.formState.errors.code && (
+                                            <p className="text-sm text-destructive">
+                                                {codeForm.formState.errors.code.message}
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">
+                                            Código enviado para {codeEmail}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="flex-1"
+                                            onClick={() => {
+                                                setCodeSent(false);
+                                                setCodeEmail('');
+                                                codeForm.reset();
+                                            }}
+                                        >
+                                            Trocar Email
+                                        </Button>
+                                        <Button type="submit" className="flex-1" disabled={isLoading}>
+                                            {isLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                'Entrar'
+                                            )}
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
+                        </form>
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4">
+                <div className="relative w-full">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                            Não tem uma conta?
+                        </span>
+                    </div>
+                </div>
+                <Link href="/register" className="w-full">
+                    <Button variant="outline" className="w-full">
+                        Criar Conta
+                    </Button>
+                </Link>
+            </CardFooter>
+        </Card>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4">
+            <Suspense
+                fallback={
+                    <div className="flex items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                }
+            >
+                <LoginForm />
+            </Suspense>
         </div>
     );
 }

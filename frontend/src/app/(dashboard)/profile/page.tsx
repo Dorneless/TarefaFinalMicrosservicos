@@ -1,153 +1,152 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { userService } from "@/lib/api";
-import { User } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { User, Mail, Phone, FileText, Loader2, Save } from 'lucide-react';
+import { userService } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { toast } from 'sonner';
 
-const formSchema = z.object({
-    name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres" }),
-    email: z.string().email({ message: "Endereço de e-mail inválido" }),
+const profileSchema = z.object({
+    name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
     phone: z.string().optional(),
     document: z.string().optional(),
 });
 
+type ProfileForm = z.infer<typeof profileSchema>;
+
 export default function ProfilePage() {
-    const { data: user, isLoading: loading } = useQuery({
-        queryKey: ["user-profile"],
-        queryFn: async () => {
-            const response = await userService.get<User>("/users/me");
-            return response.data;
-        },
-    });
+    const { data: session, update } = useSession();
+    const [isLoading, setIsLoading] = useState(false);
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<ProfileForm>({
+        resolver: zodResolver(profileSchema),
         defaultValues: {
-            name: "",
-            email: "",
-            phone: "",
-            document: "",
+            name: session?.user?.name || '',
+            phone: '',
+            document: '',
         },
     });
 
-    const [saving, setSaving] = useState(false);
-
-    useEffect(() => {
-        if (user) {
-            form.reset({
-                name: user.name,
-                email: user.email,
-                phone: user.phone || "",
-                document: user.document || "",
-            });
-        }
-    }, [user, form]);
-
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        setSaving(true);
+    const onSubmit = async (data: ProfileForm) => {
+        setIsLoading(true);
         try {
-            await userService.put("/users/me", values);
-            toast.success("Perfil atualizado com sucesso!");
-        } catch (error: any) {
-            console.error("Update failed:", error);
-            const msg = error.response?.data?.message || "Falha ao atualizar perfil.";
-            toast.error(msg);
+            await userService.put('/users/me', data);
+            toast.success('Perfil atualizado com sucesso!');
+            // Update session
+            await update({ name: data.name });
+        } catch (error) {
+            toast.error('Erro ao atualizar perfil');
         } finally {
-            setSaving(false);
+            setIsLoading(false);
         }
-    }
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
+    };
 
     return (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto space-y-8">
+            <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tight">Meu Perfil</h1>
+                <p className="text-muted-foreground">
+                    Gerencie suas informações pessoais
+                </p>
+            </div>
+
             <Card>
                 <CardHeader>
-                    <CardTitle>Perfil</CardTitle>
-                    <CardDescription>Gerencie suas informações pessoais</CardDescription>
+                    <CardTitle>Informações Pessoais</CardTitle>
+                    <CardDescription>
+                        Atualize seus dados de perfil
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Nome</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="João Silva" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>E-mail</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="email@exemplo.com" {...field} disabled />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="phone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Telefone</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="+55 11 99999-9999" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="document"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Documento</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="123.456.789-00" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={saving}>
-                                {saving ? "Salvando..." : "Salvar Alterações"}
-                            </Button>
-                        </form>
-                    </Form>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={session?.user?.email || ''}
+                                    disabled
+                                    className="pl-10 bg-muted"
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                O email não pode ser alterado
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Nome Completo</Label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    id="name"
+                                    placeholder="Seu nome"
+                                    className="pl-10"
+                                    {...form.register('name')}
+                                />
+                            </div>
+                            {form.formState.errors.name && (
+                                <p className="text-sm text-destructive">
+                                    {form.formState.errors.name.message}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Telefone (opcional)</Label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    id="phone"
+                                    placeholder="(00) 00000-0000"
+                                    className="pl-10"
+                                    {...form.register('phone')}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="document">CPF (opcional)</Label>
+                            <div className="relative">
+                                <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    id="document"
+                                    placeholder="000.000.000-00"
+                                    className="pl-10"
+                                    {...form.register('document')}
+                                />
+                            </div>
+                        </div>
+
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Salvando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Alterações
+                                </>
+                            )}
+                        </Button>
+                    </form>
                 </CardContent>
             </Card>
         </div>
