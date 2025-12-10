@@ -83,7 +83,11 @@ const withPWA = withPWAInit({
     runtimeCaching: [
       {
         urlPattern: ({ request, url }) => {
-          return request.mode === "navigate" || url.searchParams.has("_rsc");
+          // Cache navigations, RSC payloads, AND explicit preloads for events/attendance pages
+          return request.mode === "navigate" ||
+            url.searchParams.has("_rsc") ||
+            /^\/events\/[^/]+$/.test(url.pathname) ||
+            /^\/admin\/events\/[^/]+\/attendance$/.test(url.pathname);
         },
         handler: "NetworkFirst",
         options: {
