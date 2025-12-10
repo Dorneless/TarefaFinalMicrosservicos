@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { useState, useRef, useEffect } from "react"
-import { User, LogOut, ChevronDown, Calendar, Ticket } from "lucide-react"
+import { User, LogOut, ChevronDown, Calendar, Ticket, ShieldCheck, Search } from "lucide-react"
 
 export function Navbar() {
     const { data: session, status } = useSession()
@@ -57,6 +57,33 @@ export function Navbar() {
                                 >
                                     <Calendar className="h-4 w-4" />
                                     Minhas inscrições
+                                </Link>
+                            </div>
+                        </div>
+
+                        <div className="relative group/certificates h-full flex items-center ml-2">
+                            <button className="flex items-center gap-1.5 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm transition-colors cursor-pointer px-3 py-2 rounded-md hover:bg-gray-50">
+                                <ShieldCheck className="h-4 w-4" />
+                                Certificados
+                                <ChevronDown className="h-3 w-3 text-gray-400 group-hover/certificates:text-gray-600 transition-colors" />
+                            </button>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-56 rounded-xl shadow-xl py-2 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden group-hover/certificates:block animate-in fade-in zoom-in-95 duration-200 z-50">
+                                <div className="px-2 pb-2 mb-2 border-b border-gray-100">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 pt-2">Ações</p>
+                                </div>
+                                <Link
+                                    href="/certificates"
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors mx-2 rounded-lg"
+                                >
+                                    <ShieldCheck className="h-4 w-4" />
+                                    Meus Certificados
+                                </Link>
+                                <Link
+                                    href="/verify-certificate"
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors mx-2 rounded-lg"
+                                >
+                                    <Search className="h-4 w-4" />
+                                    Validar Certificado
                                 </Link>
                             </div>
                         </div>

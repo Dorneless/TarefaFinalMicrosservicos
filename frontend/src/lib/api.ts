@@ -114,3 +114,66 @@ export async function updateUser(data: { name?: string; document?: string; phone
         body: JSON.stringify(data),
     })
 }
+
+const API_CERTIFICATES_URL = process.env.NEXT_PUBLIC_API_CERTIFICATION_URL
+
+export async function generateCertificate(eventId: string) {
+    const headers = await getAuthHeader()
+    const res = await fetch(`${API_CERTIFICATES_URL}/certificates/issue`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(headers as Record<string, string>),
+        },
+        body: JSON.stringify({ eventId }),
+    })
+
+    if (!res.ok) {
+        const error = await res.text()
+        throw new Error(error || `Failed to generate certificate: ${res.status}`)
+    }
+
+    return res.blob()
+}
+
+export async function getMyCertificates() {
+    const res = await fetchWithAuth(`${API_CERTIFICATES_URL}/certificates/my-certificates`, { cache: "no-store" })
+    return res
+}
+
+export async function verifyCertificate(code: string) {
+    // Public endpoint, no auth header needed?
+    // Controller has NO @UseGuards on verifyCertificate?
+    // Let's check controller again. Yes: @Get('verify/:code') has NO @UseGuards.
+    const res = await fetch(`${API_CERTIFICATES_URL}/certificates/verify/${code}`, {
+        cache: "no-store",
+    })
+
+    if (!res.ok) {
+        if (res.status === 404) return null
+        throw new Error(`Failed to verify certificate: ${res.status}`)
+    }
+
+    return res.json()
+}
+
+export async function downloadCertificateByCode(code: string) {
+    // This is the secure download that requires auth if we use the endpoint @Get('download/:code') in controller
+    // which has @UseGuards(JwtAuthGuard).
+    // For public verification, maybe we don't allow download? 
+    // The requirement says "verify certificate by code", usually means seeing details.
+
+    const headers = await getAuthHeader()
+    const res = await fetch(`${API_CERTIFICATES_URL}/certificates/download/${code}`, {
+        method: "GET",
+        headers: {
+            ...(headers as Record<string, string>),
+        },
+    })
+
+    if (!res.ok) {
+        const error = await res.text()
+        throw new Error(error || `Failed to download certificate: ${res.status}`)
+    }
+    return res.blob()
+}

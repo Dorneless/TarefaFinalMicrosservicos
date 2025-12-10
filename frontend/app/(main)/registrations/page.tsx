@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getMyRegistrations } from "@/lib/api"
+import { getMyRegistrations, generateCertificate } from "@/lib/api"
 import { EventRegistrationResponseDTO } from "@/types/registrations"
-import { Loader2, Calendar, MapPin, CheckCircle, Clock } from "lucide-react"
+import { Loader2, Calendar, MapPin, CheckCircle, Clock, Download } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 export default function RegistrationsPage() {
     const [registrations, setRegistrations] = useState<EventRegistrationResponseDTO[]>([])
+    const [generatingCertId, setGeneratingCertId] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -23,6 +24,27 @@ export default function RegistrationsPage() {
             console.error("Failed to fetch registrations", error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    async function handleGenerateCertificate(eventId: string, eventName: string) {
+        setGeneratingCertId(eventId)
+        try {
+            const blob = await generateCertificate(eventId)
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            const filename = `Certificado-${eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`
+            a.download = filename
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+        } catch (error) {
+            console.error("Failed to generate certificate", error)
+            alert("Erro ao gerar certificado. Tente novamente.")
+        } finally {
+            setGeneratingCertId(null)
         }
     }
 
@@ -52,8 +74,8 @@ export default function RegistrationsPage() {
 
                                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
                                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${reg.attended
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-blue-100 text-blue-700"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-blue-100 text-blue-700"
                                             }`}>
                                             {reg.attended ? (
                                                 <>
@@ -67,6 +89,21 @@ export default function RegistrationsPage() {
                                                 </>
                                             )}
                                         </div>
+
+                                        {reg.attended && (
+                                            <button
+                                                onClick={() => handleGenerateCertificate(reg.eventId, reg.eventName)}
+                                                disabled={generatingCertId === reg.eventId}
+                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {generatingCertId === reg.eventId ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Download className="h-4 w-4" />
+                                                )}
+                                                Gerar Certificado
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
