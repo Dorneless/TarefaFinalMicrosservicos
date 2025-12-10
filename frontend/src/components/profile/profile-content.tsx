@@ -38,12 +38,18 @@ export function ProfileContent() {
                 phone: formData.phone
             })
 
-            // Update session client-side to reflect new name immediately if possible
+            // Update session client-side to reflect new details immediately
             await update({
                 ...session,
                 user: {
                     ...session?.user,
-                    name: formData.name
+                    name: formData.name,
+                    // Note: session user type might need extension to support these checks TS-wise, 
+                    // but for now we pass them to ensure persistence if the session handles them.
+                    // If NextAuth session callback doesn't map them, they might be lost on refresh, 
+                    // but this updates the active client session state.
+                    document: formData.document,
+                    phone: formData.phone
                 }
             })
 

@@ -189,7 +189,7 @@ export async function getMyRegistrations() {
 const API_USERS_URL = process.env.NEXT_PUBLIC_API_USERS_URL || "http://localhost:8080" // Fallback or env var
 
 export async function updateUser(data: { name?: string; document?: string; phone?: string }) {
-    return fetchWithAuth(`${API_USERS_URL}/api/users/me`, {
+    return fetchWithAuth(`${API_USER_URL}/api/users/me`, {
         method: "PUT",
         body: JSON.stringify(data),
     })

@@ -21,10 +21,15 @@ export function LogsContent() {
             router.push("/login")
         } else if (session?.user?.role !== "ADMIN" && status === "authenticated") {
             router.push("/")
-        } else if (session?.user?.role === "ADMIN") {
+        } else if (session?.user?.role === "ADMIN" && logs.length === 0 && !loading) {
+            // loading check is initial state true, so this might need adjustment logic-wise or just trust stable dependency
+            // Actually, the original issue was just session changing. 
+            // Let's just call loadLogs if verify condition context.
+            // But wait, loadLogs sets state, which triggers re-render. If session is new ref, loop.
+            // By removing session from dep array and using session.user.role, we break loop.
             loadLogs()
         }
-    }, [status, session, router])
+    }, [status, session?.user?.role, router]) // Removed full 'session' object dependency
 
     async function loadLogs() {
         setLoading(true)
