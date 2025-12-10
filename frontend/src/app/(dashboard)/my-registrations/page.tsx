@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { eventsService, certificateApi, notificationService } from "@/lib/api";
-import axios from "axios";
 import { EventRegistration } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

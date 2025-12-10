@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -211,12 +212,12 @@ export default function LoginPage() {
                 <CardFooter className="flex justify-center">
                     <p className="text-sm text-gray-500">
                         Não tem uma conta?{" "}
-                        <span
-                            onClick={() => window.location.href = "/register"}
-                            className="text-blue-500 hover:underline cursor-pointer"
+                        <Link
+                            href="/register"
+                            className="text-blue-500 hover:underline"
                         >
                             Cadastre-se
-                        </span>
+                        </Link>
                     </p>
                 </CardFooter>
             </Card>

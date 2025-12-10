@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { eventsService, notificationService } from "@/lib/api";
-import axios from "axios";
 import { Event, EventRegistration } from "@/types";
 import { useSync } from "@/contexts/sync-context";
 import { Button } from "@/components/ui/button";
@@ -239,9 +239,7 @@ export default function EventDetailsPage() {
             <div className="text-center py-12">
                 <p className="text-muted-foreground text-lg">Evento não encontrado.</p>
                 <Button asChild className="mt-4">
-                    <span onClick={() => window.location.href = "/"} className="cursor-pointer">
-                        Voltar para Eventos
-                    </span>
+                    <Link href="/">Voltar para Eventos</Link>
                 </Button>
             </div>
         );
@@ -250,9 +248,9 @@ export default function EventDetailsPage() {
     return (
         <div className="max-w-3xl mx-auto space-y-6">
             <Button variant="ghost" asChild className="mb-4 pl-0 hover:bg-transparent hover:text-primary">
-                <span onClick={() => window.location.href = "/"} className="flex items-center gap-2 cursor-pointer">
+                <Link href="/" className="flex items-center gap-2">
                     <ArrowLeft className="h-4 w-4" /> Voltar para Eventos
-                </span>
+                </Link>
             </Button>
 
             <Card>
@@ -283,14 +281,10 @@ export default function EventDetailsPage() {
                     {session?.user?.role === "ADMIN" && (
                         <div className="flex gap-2 mr-auto">
                             <Button variant="outline" asChild>
-                                <span onClick={() => window.location.href = `/admin/events/${event.id}/edit`} className="cursor-pointer">
-                                    Editar Evento
-                                </span>
+                                <Link href={`/admin/events/${event.id}/edit`}>Editar Evento</Link>
                             </Button>
                             <Button variant="outline" asChild>
-                                <span onClick={() => window.location.href = `/admin/events/${event.id}/attendance`} className="cursor-pointer">
-                                    Gerenciar Presença
-                                </span>
+                                <Link href={`/admin/events/${event.id}/attendance`}>Gerenciar Presença</Link>
                             </Button>
                             <Dialog>
                                 <DialogTrigger asChild>

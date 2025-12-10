@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { eventsService } from "@/lib/api";
 import { Event } from "@/types";
@@ -17,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
     const { data: session } = useSession();
+    const router = useRouter();
     const [search, setSearch] = useState("");
     const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
 
@@ -73,8 +76,8 @@ export default function DashboardPage() {
                         />
                     </div>
                     {session?.user?.role === "ADMIN" && (
-                        <Button onClick={() => window.location.href = "/admin/events/create"}>
-                            Criar Evento
+                        <Button asChild>
+                            <Link href="/admin/events/create">Criar Evento</Link>
                         </Button>
                     )}
                 </div>
@@ -114,10 +117,7 @@ export default function DashboardPage() {
                             <CardFooter>
                                 <Button
                                     className="w-full"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        window.location.href = `/events/${event.id}`;
-                                    }}
+                                    onClick={() => router.push(`/events/${event.id}`)}
                                 >
                                     Ver Detalhes
                                 </Button>

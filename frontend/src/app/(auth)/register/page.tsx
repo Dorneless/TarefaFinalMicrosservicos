@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -128,12 +129,12 @@ export default function RegisterPage() {
                 <CardFooter className="flex justify-center">
                     <p className="text-sm text-gray-500">
                         Já tem uma conta?{" "}
-                        <span
-                            onClick={() => window.location.href = "/login"}
-                            className="text-blue-500 hover:underline cursor-pointer"
+                        <Link
+                            href="/login"
+                            className="text-blue-500 hover:underline"
                         >
                             Entrar
-                        </span>
+                        </Link>
                     </p>
                 </CardFooter>
             </Card>

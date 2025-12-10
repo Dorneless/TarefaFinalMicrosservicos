@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -12,7 +13,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, LogOut, Calendar, Award, UserCircle, Menu, CheckCircle, RefreshCw, ScrollText } from "lucide-react";
+import { User, LogOut, Calendar, Award, UserCircle, CheckCircle, RefreshCw, ScrollText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSync } from "@/contexts/sync-context";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,41 +42,41 @@ export function Navbar() {
         <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
                 <div className="flex items-center flex-1">
-                    <span onClick={() => window.location.href = "/"} className="flex items-center space-x-2 cursor-pointer">
+                    <Link href="/" className="flex items-center space-x-2">
                         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                             <Calendar className="h-5 w-5 text-primary-foreground" />
                         </div>
                         <span className="hidden font-bold text-lg sm:inline-block">
                             Gestor de Eventos
                         </span>
-                    </span>
+                    </Link>
                 </div>
 
                 <nav className="hidden md:flex items-center justify-center space-x-6 text-sm font-medium">
                     {links.map((link) => (
-                        <span
+                        <Link
                             key={link.href}
-                            onClick={() => window.location.href = link.href}
+                            href={link.href}
                             className={cn(
-                                "transition-colors hover:text-foreground/80 flex items-center gap-2 cursor-pointer",
+                                "transition-colors hover:text-foreground/80 flex items-center gap-2",
                                 pathname === link.href ? "text-primary font-semibold" : "text-foreground/60"
                             )}
                         >
                             <link.icon className="h-4 w-4" />
                             {link.label}
-                        </span>
+                        </Link>
                     ))}
                     {session?.user?.role === "ADMIN" && (
-                        <span
-                            onClick={() => window.location.href = "/admin/logs"}
+                        <Link
+                            href="/admin/logs"
                             className={cn(
-                                "transition-colors hover:text-foreground/80 flex items-center gap-2 cursor-pointer",
+                                "transition-colors hover:text-foreground/80 flex items-center gap-2",
                                 pathname === "/admin/logs" ? "text-primary font-semibold" : "text-foreground/60"
                             )}
                         >
                             <ScrollText className="h-4 w-4" />
                             Logs
-                        </span>
+                        </Link>
                     )}
                 </nav>
 
@@ -115,10 +116,10 @@ export function Navbar() {
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
-                                    <span onClick={() => window.location.href = "/profile"} className="cursor-pointer flex items-center">
+                                    <Link href="/profile" className="cursor-pointer flex items-center">
                                         <UserCircle className="mr-2 h-4 w-4" />
                                         <span>Perfil</span>
-                                    </span>
+                                    </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
                                     <LogOut className="mr-2 h-4 w-4" />
@@ -129,10 +130,10 @@ export function Navbar() {
                     ) : (
                         <div className="flex items-center gap-2">
                             <Button asChild variant="ghost" size="sm">
-                                <span onClick={() => window.location.href = "/login"} className="cursor-pointer">Entrar</span>
+                                <Link href="/login">Entrar</Link>
                             </Button>
                             <Button asChild size="sm">
-                                <span onClick={() => window.location.href = "/register"} className="cursor-pointer">Cadastrar</span>
+                                <Link href="/register">Cadastrar</Link>
                             </Button>
                         </div>
                     )}
