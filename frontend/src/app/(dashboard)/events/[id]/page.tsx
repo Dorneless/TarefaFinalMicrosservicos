@@ -32,46 +32,25 @@ export default function EventDetailsPage() {
     const { data: session } = useSession();
     const [registering, setRegistering] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
-    const { data: event, isLoading: loadingEvent } = useQuery({
+    const { data: event, isLoading, error } = useQuery({
         queryKey: ["events", params.id],
         queryFn: async () => {
-            try {
-                const response = await eventsService.get<Event>(`/events/${params.id}`);
-                const data = response.data;
-                // Save to IDB cache
-                const { cacheEvent } = await import("@/lib/cache-storage");
-                await cacheEvent(data);
-                return data;
-            } catch (error) {
-                console.error("Failed to fetch event online, trying cache:", error);
-                const { getCachedEvent } = await import("@/lib/cache-storage");
-                const cached = await getCachedEvent(params.id as string);
-                if (cached) return cached;
-                throw error;
-            }
+            const response = await eventsService.get<Event>(`/events/${params.id}`);
+            return response.data;
         },
-        enabled: !!params.id,
-        staleTime: 1000 * 60 * 10, // 10 minutes
+        staleTime: 0,
+        gcTime: 1000 * 60 * 60 * 24,
     });
 
     const { data: registrations = [] } = useQuery({
         queryKey: ["my-registrations"],
         queryFn: async () => {
             if (!session) return [];
-            try {
-                const response = await eventsService.get<EventRegistration[]>("/my-events");
-                const data = response.data;
-                const { cacheRegistrations } = await import("@/lib/cache-storage");
-                await cacheRegistrations(data);
-                return data;
-            } catch (error) {
-                console.error("Failed to fetch registrations online, trying cache:", error);
-                const { getCachedRegistrations } = await import("@/lib/cache-storage");
-                const cached = await getCachedRegistrations();
-                if (cached) return cached;
-                throw error;
-            }
+            const response = await eventsService.get<EventRegistration[]>("/my-events");
+            return response.data;
         },
+        staleTime: 0,
+        gcTime: 1000 * 60 * 60 * 24,
         enabled: !!session,
     });
 
@@ -84,7 +63,7 @@ export default function EventDetailsPage() {
         }
     }, [session, registrations, event]);
 
-    const loading = loadingEvent;
+    const loading = isLoading;
 
     const handleRegister = async () => {
         if (!session) {

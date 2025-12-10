@@ -23,21 +23,11 @@ export default function DashboardPage() {
     const { data: events = [], isLoading: loading, isError } = useQuery({
         queryKey: ["events"],
         queryFn: async () => {
-            try {
-                const response = await eventsService.get<Event[]>("/events");
-                const data = response.data;
-                const { cacheEvents } = await import("@/lib/cache-storage");
-                await cacheEvents(data);
-                return data;
-            } catch (error) {
-                console.error("Failed to fetch events online, trying cache:", error);
-                const { getCachedEvents } = await import("@/lib/cache-storage");
-                const cached = await getCachedEvents();
-                if (cached) return cached;
-                throw error;
-            }
+            const response = await eventsService.get<Event[]>("/events");
+            return response.data;
         },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: 0, // Always try to fetch fresh data
+        gcTime: 1000 * 60 * 60 * 24, // Keep in cache for 24h
     });
 
     useEffect(() => {
