@@ -17,49 +17,38 @@ async function getAuthHeader() {
 
 const API_LOGS_URL = process.env.NEXT_PUBLIC_API_LOGS_URL || "http://177.44.248.107:8084/api"
 
-async function logRequest(method: string, url: string, status: number, body?: any) {
-    if (url.includes("/logs")) return // Avoid infinite loop
+async function logRequest(method: string, url: string, status: number, reqBody?: any) {
+    if (url.includes("/logs")) return
 
     try {
-        const session = await getAuthHeader()
-        // We technically don't have the full user object here easily without decoding token or fetching session again, 
-        // but let's try to do it right if possible. 
-        // Actually, the requirement says "interceptador deve salvar na tabela de logs".
-        // The backend `user-service` logs endpoint usually expects data about who did what.
-        // Let's assume the logs service just takes what we send.
-
         // We need to get the user email if possible.
         let userEmail = "anonymous"
-        let userId = "unknown"
 
         if (typeof window !== "undefined") {
             const sess = await getSession()
-            if (sess?.user) {
-                userEmail = sess.user.email || "unknown"
-                userId = (sess.user as any).id || "unknown" // Cast as any because ID might not be in standard type
-            }
+            if (sess?.user?.email) userEmail = sess.user.email
         } else {
             const sess = await auth()
-            if (sess?.user) {
-                userEmail = sess.user.email || "unknown"
-                userId = (sess.user as any).id || "unknown"
-            }
+            if (sess?.user?.email) userEmail = sess.user.email
         }
+
+        // Formatting body as string if it exists
+        const bodyString = reqBody ? (typeof reqBody === 'string' ? reqBody : JSON.stringify(reqBody)) : ""
 
         // We fire and forget this request to not block the UI
         fetch(`${API_LOGS_URL}/logs`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                // ...session // Should we send auth headers to log service?
             },
             body: JSON.stringify({
-                method,
-                path: url,
+                userEmail,
+                body: bodyString,
                 statusCode: status,
-                userEmail, // The backed might expect 'userEmail' or similar
-                ip: "frontend", // We can't easily get real IP from client side, maybe 'frontend' is enough
-                timestamp: new Date().toISOString()
+                method,
+                service: "frontend",
+                ip: "frontend",
+                path: url
             })
         }).catch(err => console.error("Failed to log request:", err))
     } catch (e) {
@@ -67,7 +56,32 @@ async function logRequest(method: string, url: string, status: number, body?: an
     }
 }
 
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
+interface FetchOptions extends RequestInit {
+    skipLog?: boolean;
+}
+
+async function fetchWithAuth(url: string, options: FetchOptions = {}) {
+    if (options.skipLog) {
+        // Create a new options object without skipLog to pass to fetch
+        const { skipLog, ...fetchOptions } = options;
+        const headers = await getAuthHeader()
+        const res = await fetch(url, {
+            ...fetchOptions,
+            headers: {
+                "Content-Type": "application/json",
+                ...headers,
+                ...fetchOptions.headers,
+            } as HeadersInit,
+        })
+
+        if (!res.ok) {
+            const error = await res.text()
+            throw new Error(error || `Request failed with status ${res.status}`)
+        }
+        if (res.status === 204) return null
+        return res.json()
+    }
+
     const headers = await getAuthHeader()
     let status = 0
     try {
@@ -82,9 +96,10 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
         status = res.status
 
         // Log the request
-        logRequest(options.method || "GET", url, status, options.body)
+        if (!url.includes("/logs")) {
+            logRequest(options.method || "GET", url, status, options.body)
+        }
 
-        // Handle 401/403 globally ideally, but for now just throw
         if (!res.ok) {
             const error = await res.text()
             throw new Error(error || `Request failed with status ${res.status}`)
@@ -94,9 +109,10 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
         return res.json()
     } catch (error) {
-        // Log logging failure does not make sense, but we should log the failed request status if we have it, or 500
-        if (status === 0) status = 500 // Network error or something
-        logRequest(options.method || "GET", url, status, options.body)
+        if (status === 0) status = 500
+        if (!url.includes("/logs")) {
+            logRequest(options.method || "GET", url, status, options.body)
+        }
         throw error
     }
 }
@@ -330,16 +346,17 @@ export async function sendCertificateIssuedNotification(data: CertificateIssuedD
 
 export interface LogEntry {
     id: number;
-    method: string;
-    path: string;
-    statusCode: number;
     userEmail: string;
+    body: string;
+    statusCode: number;
+    method: string;
+    service: string;
     ip: string;
-    timestamp: string;
-    body?: string;
+    path: string;
+    timestamp?: string; // Backend might add this, keeping it optional for UI
 }
 
 export async function getSystemLogs(): Promise<LogEntry[]> {
-    return fetchWithAuth(`${API_LOGS_URL}/logs`, { cache: "no-store", method: "GET" })
+    return fetchWithAuth(`${API_LOGS_URL}/logs`, { cache: "no-store", method: "GET", skipLog: true })
 }
 
