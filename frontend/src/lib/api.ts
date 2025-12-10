@@ -115,6 +115,24 @@ export async function updateUser(data: { name?: string; document?: string; phone
     })
 }
 
+const API_USER_URL = process.env.NEXT_PUBLIC_API_USER_URL
+
+export async function requestLoginCode(email: string) {
+    const res = await fetch(`${API_USER_URL}/api/auth/request-code`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+    })
+
+    if (!res.ok) {
+        throw new Error("Erro ao enviar código (verifique se o email está cadastrado)")
+    }
+
+    return true
+}
+
 const API_CERTIFICATES_URL = process.env.NEXT_PUBLIC_API_CERTIFICATION_URL
 
 export async function generateCertificate(eventId: string) {

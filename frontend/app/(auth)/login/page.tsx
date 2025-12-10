@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Loader2, Mail, Lock, KeyRound } from "lucide-react"
+import { requestLoginCode } from "@/lib/api"
 
 const loginSchema = z.object({
     email: z.string().email("Email inválido"),
@@ -58,13 +59,7 @@ function LoginForm() {
                 // Code login
                 if (!codeSent) {
                     // Request code
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_USER_URL}/api/auth/request-code`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ email: data.email }),
-                    })
-
-                    if (!res.ok) throw new Error("Erro ao enviar código (verifique se o email está cadastrado)")
+                    await requestLoginCode(data.email)
 
                     setCodeSent(true)
                     // Keep loading false to allow user to type code
