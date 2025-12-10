@@ -31,6 +31,7 @@ async function loginWithCode(email: string, code: string) {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+    trustHost: true,
     providers: [
         Credentials({
             authorize: async (credentials) => {
