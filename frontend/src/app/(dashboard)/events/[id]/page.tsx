@@ -36,20 +36,42 @@ export default function EventDetailsPage() {
     const { data: event, isLoading: loadingEvent } = useQuery({
         queryKey: ["events", params.id],
         queryFn: async () => {
-            const response = await eventsService.get<Event>(`/events/${params.id}`);
-            return response.data;
+            try {
+                const response = await eventsService.get<Event>(`/events/${params.id}`);
+                const data = response.data;
+                // Save to IDB cache
+                const { cacheEvent } = await import("@/lib/cache-storage");
+                await cacheEvent(data);
+                return data;
+            } catch (error) {
+                console.error("Failed to fetch event online, trying cache:", error);
+                const { getCachedEvent } = await import("@/lib/cache-storage");
+                const cached = await getCachedEvent(params.id as string);
+                if (cached) return cached;
+                throw error;
+            }
         },
         enabled: !!params.id,
         staleTime: 1000 * 60 * 10, // 10 minutes
-        gcTime: 1000 * 60 * 60, // 1 hour
     });
 
     const { data: registrations = [] } = useQuery({
         queryKey: ["my-registrations"],
         queryFn: async () => {
             if (!session) return [];
-            const response = await eventsService.get<EventRegistration[]>("/my-events");
-            return response.data;
+            try {
+                const response = await eventsService.get<EventRegistration[]>("/my-events");
+                const data = response.data;
+                const { cacheRegistrations } = await import("@/lib/cache-storage");
+                await cacheRegistrations(data);
+                return data;
+            } catch (error) {
+                console.error("Failed to fetch registrations online, trying cache:", error);
+                const { getCachedRegistrations } = await import("@/lib/cache-storage");
+                const cached = await getCachedRegistrations();
+                if (cached) return cached;
+                throw error;
+            }
         },
         enabled: !!session,
     });
