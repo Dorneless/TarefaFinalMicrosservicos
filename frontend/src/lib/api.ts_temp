@@ -1,0 +1,15 @@
+export interface LogEntry {
+    id: number;
+    method: string;
+    path: string;
+    statusCode: number;
+    userEmail: string;
+    ip: string;
+    timestamp: string;
+    body?: string;
+}
+
+export async function getSystemLogs(): Promise<LogEntry[]> {
+    const res = await fetchWithAuth(`${API_LOGS_URL}/logs`, { cache: "no-store", method: "GET" })
+    return res
+}

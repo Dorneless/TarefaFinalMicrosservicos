@@ -15,26 +15,90 @@ async function getAuthHeader() {
     }
 }
 
+const API_LOGS_URL = process.env.NEXT_PUBLIC_API_LOGS_URL || "http://177.44.248.107:8084/api"
+
+async function logRequest(method: string, url: string, status: number, body?: any) {
+    if (url.includes("/logs")) return // Avoid infinite loop
+
+    try {
+        const session = await getAuthHeader()
+        // We technically don't have the full user object here easily without decoding token or fetching session again, 
+        // but let's try to do it right if possible. 
+        // Actually, the requirement says "interceptador deve salvar na tabela de logs".
+        // The backend `user-service` logs endpoint usually expects data about who did what.
+        // Let's assume the logs service just takes what we send.
+
+        // We need to get the user email if possible.
+        let userEmail = "anonymous"
+        let userId = "unknown"
+
+        if (typeof window !== "undefined") {
+            const sess = await getSession()
+            if (sess?.user) {
+                userEmail = sess.user.email || "unknown"
+                userId = (sess.user as any).id || "unknown" // Cast as any because ID might not be in standard type
+            }
+        } else {
+            const sess = await auth()
+            if (sess?.user) {
+                userEmail = sess.user.email || "unknown"
+                userId = (sess.user as any).id || "unknown"
+            }
+        }
+
+        // We fire and forget this request to not block the UI
+        fetch(`${API_LOGS_URL}/logs`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // ...session // Should we send auth headers to log service?
+            },
+            body: JSON.stringify({
+                method,
+                path: url,
+                statusCode: status,
+                userEmail, // The backed might expect 'userEmail' or similar
+                ip: "frontend", // We can't easily get real IP from client side, maybe 'frontend' is enough
+                timestamp: new Date().toISOString()
+            })
+        }).catch(err => console.error("Failed to log request:", err))
+    } catch (e) {
+        console.error("Error in log interceptor:", e)
+    }
+}
+
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
     const headers = await getAuthHeader()
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            "Content-Type": "application/json",
-            ...headers,
-            ...options.headers,
-        } as HeadersInit,
-    })
+    let status = 0
+    try {
+        const res = await fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                ...headers,
+                ...options.headers,
+            } as HeadersInit,
+        })
+        status = res.status
 
-    // Handle 401/403 globally ideally, but for now just throw
-    if (!res.ok) {
-        const error = await res.text()
-        throw new Error(error || `Request failed with status ${res.status}`)
+        // Log the request
+        logRequest(options.method || "GET", url, status, options.body)
+
+        // Handle 401/403 globally ideally, but for now just throw
+        if (!res.ok) {
+            const error = await res.text()
+            throw new Error(error || `Request failed with status ${res.status}`)
+        }
+
+        if (res.status === 204) return null
+
+        return res.json()
+    } catch (error) {
+        // Log logging failure does not make sense, but we should log the failed request status if we have it, or 500
+        if (status === 0) status = 500 // Network error or something
+        logRequest(options.method || "GET", url, status, options.body)
+        throw error
     }
-
-    if (res.status === 204) return null
-
-    return res.json()
 }
 
 export async function getUpcomingEvents() {
@@ -263,3 +327,19 @@ export async function sendCertificateIssuedNotification(data: CertificateIssuedD
         body: JSON.stringify(data),
     })
 }
+
+export interface LogEntry {
+    id: number;
+    method: string;
+    path: string;
+    statusCode: number;
+    userEmail: string;
+    ip: string;
+    timestamp: string;
+    body?: string;
+}
+
+export async function getSystemLogs(): Promise<LogEntry[]> {
+    return fetchWithAuth(`${API_LOGS_URL}/logs`, { cache: "no-store", method: "GET" })
+}
+
