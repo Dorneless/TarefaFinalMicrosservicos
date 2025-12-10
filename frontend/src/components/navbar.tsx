@@ -1,240 +1,130 @@
-'use client';
+"use client"
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
-import {
-    Calendar,
-    Award,
-    ClipboardList,
-    Settings,
-    LogOut,
-    User,
-    Users,
-    FileText,
-    Plus,
-    Menu,
-    X,
-} from 'lucide-react';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ConnectionStatus } from './connection-status';
-
-const userNavItems = [
-    { href: '/', label: 'Eventos', icon: Calendar },
-    { href: '/my-registrations', label: 'Minhas Inscrições', icon: ClipboardList },
-    { href: '/my-certificates', label: 'Certificados', icon: Award },
-];
-
-const adminNavItems = [
-    { href: '/admin/events', label: 'Gerenciar Eventos', icon: Settings },
-    { href: '/admin/users', label: 'Cadastrar Usuário', icon: Users },
-    { href: '/admin/logs', label: 'Logs', icon: FileText },
-];
+import Link from "next/link"
+import { useSession, signOut } from "next-auth/react"
+import { useState, useRef, useEffect } from "react"
+import { User, LogOut, ChevronDown, Calendar, Ticket } from "lucide-react"
 
 export function Navbar() {
-    const pathname = usePathname();
-    const { data: session } = useSession();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { data: session, status } = useSession()
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
 
-    const isAdmin = session?.user?.role === 'ADMIN';
-
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-    };
-
-    const isActive = (href: string) => {
-        if (href === '/') {
-            return pathname === '/';
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false)
+            }
         }
-        return pathname.startsWith(href);
-    };
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [])
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <nav className="container mx-auto flex h-16 items-center justify-between px-4">
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <Calendar className="h-5 w-5" />
+        <nav className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16">
+                    {/* Logo and Nav */}
+                    <div className="flex">
+                        <Link href="/" className="flex-shrink-0 flex items-center gap-2">
+                            <div className="bg-blue-600 p-1.5 rounded-lg">
+                                <Ticket className="h-6 w-6 text-white" />
+                            </div>
+                            <span className="font-bold text-xl text-gray-900 tracking-tight">EventosApp</span>
+                        </Link>
+
+                        <div className="relative group/events h-full flex items-center" >
+                            <button className="flex items-center gap-1.5 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm transition-colors cursor-pointer px-3 py-2 rounded-md hover:bg-gray-50">
+                                <Calendar className="h-4 w-4" />
+                                Eventos
+                                <ChevronDown className="h-3 w-3 text-gray-400 group-hover/events:text-gray-600 transition-colors" />
+                            </button>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-56 rounded-xl shadow-xl py-2 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden group-hover/events:block animate-in fade-in zoom-in-95 duration-200 z-50">
+                                <div className="px-2 pb-2 mb-2 border-b border-gray-100">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 pt-2">Navegação</p>
+                                </div>
+                                <Link
+                                    href="/"
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors mx-2 rounded-lg"
+                                >
+                                    <Ticket className="h-4 w-4" />
+                                    Ver eventos
+                                </Link>
+                                <Link
+                                    href="/registrations"
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors mx-2 rounded-lg"
+                                >
+                                    <Calendar className="h-4 w-4" />
+                                    Minhas inscrições
+                                </Link>
+                            </div>
+                        </div>
                     </div>
-                    <span className="hidden font-bold sm:inline-block">EventApp</span>
-                </Link>
 
-                {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center gap-1">
-                    {userNavItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
-                                isActive(item.href)
-                                    ? 'bg-accent text-accent-foreground'
-                                    : 'text-muted-foreground'
-                            )}
-                        >
-                            <item.icon className="h-4 w-4" />
-                            {item.label}
-                        </Link>
-                    ))}
-
-                    {isAdmin && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant={pathname.startsWith('/admin') ? 'secondary' : 'ghost'}
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <Settings className="h-4 w-4" />
-                                    Admin
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Administração</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                {adminNavItems.map((item) => (
-                                    <DropdownMenuItem key={item.href} asChild>
-                                        <Link href={item.href} className="flex items-center gap-2">
-                                            <item.icon className="h-4 w-4" />
-                                            {item.label}
-                                        </Link>
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-                </div>
-
-                {/* Right side */}
-                <div className="flex items-center gap-3">
-                    <ConnectionStatus />
-
-                    {session?.user ? (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarFallback className="bg-primary text-primary-foreground">
-                                            {getInitials(session.user.name || session.user.email || 'U')}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56" align="end" forceMount>
-                                <DropdownMenuLabel className="font-normal">
-                                    <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">
-                                            {session.user.name}
-                                        </p>
-                                        <p className="text-xs leading-none text-muted-foreground">
-                                            {session.user.email}
-                                        </p>
-                                    </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Link href="/profile" className="flex items-center gap-2">
-                                        <User className="h-4 w-4" />
-                                        Meu Perfil
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={() => signOut({ callbackUrl: '/login' })}
-                                    className="text-red-600 focus:text-red-600"
-                                >
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    Sair
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    ) : (
-                        <Link href="/login">
-                            <Button size="sm">Entrar</Button>
-                        </Link>
-                    )}
-
-                    {/* Mobile menu button */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="md:hidden"
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    >
-                        {mobileMenuOpen ? (
-                            <X className="h-5 w-5" />
-                        ) : (
-                            <Menu className="h-5 w-5" />
-                        )}
-                    </Button>
-                </div>
-            </nav>
-
-            {/* Mobile Navigation */}
-            {mobileMenuOpen && (
-                <div className="border-t md:hidden">
-                    <nav className="container mx-auto px-4 py-4 space-y-2">
-                        {userNavItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className={cn(
-                                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                                    isActive(item.href)
-                                        ? 'bg-accent text-accent-foreground'
-                                        : 'text-muted-foreground hover:bg-accent'
-                                )}
-                            >
-                                <item.icon className="h-4 w-4" />
-                                {item.label}
-                            </Link>
-                        ))}
-
-                        {isAdmin && (
-                            <>
-                                <div className="my-2 border-t" />
-                                <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                    Administração
-                                </p>
-                                {adminNavItems.map((item) => (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className={cn(
-                                            'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                                            isActive(item.href)
-                                                ? 'bg-accent text-accent-foreground'
-                                                : 'text-muted-foreground hover:bg-accent'
-                                        )}
+                    {/* User Menu */}
+                    <div className="flex items-center">
+                        {status === "loading" ? (
+                            <div className="h-8 w-24 bg-gray-100 animate-pulse rounded-md"></div>
+                        ) : session ? (
+                            <div className="ml-3 relative" ref={dropdownRef}>
+                                <div>
+                                    <button
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        className="max-w-xs bg-white flex items-center gap-2 text-sm focus:outline-none group cursor-pointer"
                                     >
-                                        <item.icon className="h-4 w-4" />
-                                        {item.label}
-                                    </Link>
-                                ))}
-                            </>
+                                        <span className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium border border-blue-200 group-hover:bg-blue-200 transition-colors">
+                                            {session.user?.name?.charAt(0).toUpperCase() || "U"}
+                                        </span>
+                                        <span className="hidden md:block font-medium text-gray-700 group-hover:text-gray-900">
+                                            {session.user?.name || "Usuário"}
+                                        </span>
+                                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                </div>
+
+                                {isDropdownOpen && (
+                                    <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none animate-in fade-in zoom-in-95 duration-100">
+                                        <div className="px-4 py-2 border-b border-gray-100">
+                                            <p className="text-sm font-medium text-gray-900 truncate">{session.user?.name}</p>
+                                            <p className="text-xs text-gray-500 truncate">{session.user?.email}</p>
+                                        </div>
+
+                                        <Link
+                                            href="/profile"
+                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                            onClick={() => setIsDropdownOpen(false)}
+                                        >
+                                            <User className="mr-2 h-4 w-4" />
+                                            Meu Perfil
+                                        </Link>
+
+                                        <button
+                                            onClick={() => signOut({ callbackUrl: "/" })}
+                                            className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                        >
+                                            <LogOut className="mr-2 h-4 w-4" />
+                                            Sair
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center space-x-4">
+                                <Link href="/login" className="text-gray-500 hover:text-gray-900 font-medium text-sm">
+                                    Entrar
+                                </Link>
+                                <Link
+                                    href="/register"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+                                >
+                                    Criar Conta
+                                </Link>
+                            </div>
                         )}
-                    </nav>
+                    </div>
                 </div>
-            )}
-        </header>
-    );
+            </div>
+        </nav>
+    )
 }

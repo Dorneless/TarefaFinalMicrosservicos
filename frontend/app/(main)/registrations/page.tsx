@@ -1,0 +1,83 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { getMyRegistrations } from "@/lib/api"
+import { EventRegistrationResponseDTO } from "@/types/registrations"
+import { Loader2, Calendar, MapPin, CheckCircle, Clock } from "lucide-react"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+
+export default function RegistrationsPage() {
+    const [registrations, setRegistrations] = useState<EventRegistrationResponseDTO[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        fetchRegistrations()
+    }, [])
+
+    async function fetchRegistrations() {
+        try {
+            const data = await getMyRegistrations()
+            setRegistrations(data)
+        } catch (error) {
+            console.error("Failed to fetch registrations", error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+            <div className="max-w-7xl mx-auto">
+                <header className="mb-12">
+                    <h1 className="text-3xl font-bold text-gray-900">Minhas Inscrições</h1>
+                    <p className="text-gray-500 mt-2">Acompanhe os eventos em que você está inscrito.</p>
+                </header>
+
+                {loading ? (
+                    <div className="flex justify-center py-20">
+                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    </div>
+                ) : registrations.length > 0 ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {registrations.map((reg) => (
+                            <div key={reg.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                                <div className="p-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{reg.eventName}</h3>
+
+                                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                                        <Calendar className="h-4 w-4" />
+                                        <span>Inscrito em: {format(new Date(reg.registeredAt), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
+                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${reg.attended
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-blue-100 text-blue-700"
+                                            }`}>
+                                            {reg.attended ? (
+                                                <>
+                                                    <CheckCircle className="h-4 w-4" />
+                                                    Presença Confirmada
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Clock className="h-4 w-4" />
+                                                    Inscrito
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-gray-500">Você ainda não está inscrito em nenhum evento.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}

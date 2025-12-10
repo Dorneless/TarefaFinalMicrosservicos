@@ -1,45 +1,116 @@
-import axios from 'axios';
-import { getSession } from 'next-auth/react';
+import { getSession } from "next-auth/react"
+import { auth } from "@/auth"
 
-const createApiClient = (baseURL: string) => {
-    const api = axios.create({
-        baseURL,
+const API_EVENTS_URL = process.env.NEXT_PUBLIC_API_EVENTS_URL
+
+async function getAuthHeader() {
+    if (typeof window === "undefined") {
+        // Server-side
+        const session = await auth()
+        return session?.user?.accessToken ? { Authorization: `Bearer ${session.user.accessToken}` } : {}
+    } else {
+        // Client-side
+        const session = await getSession()
+        return session?.user?.accessToken ? { Authorization: `Bearer ${(session.user as any).accessToken}` } : {}
+    }
+}
+
+async function fetchWithAuth(url: string, options: RequestInit = {}) {
+    const headers = await getAuthHeader()
+    const res = await fetch(url, {
+        ...options,
         headers: {
-            'Content-Type': 'application/json',
-        },
-    });
+            "Content-Type": "application/json",
+            ...headers,
+            ...options.headers,
+        } as HeadersInit,
+    })
 
-    api.interceptors.request.use(async (config) => {
+    // Handle 401/403 globally ideally, but for now just throw
+    if (!res.ok) {
+        const error = await res.text()
+        throw new Error(error || `Request failed with status ${res.status}`)
+    }
+
+    if (res.status === 204) return null
+
+    return res.json()
+}
+
+export async function getUpcomingEvents() {
+    return fetchWithAuth(`${API_EVENTS_URL}/api/events/upcoming`, { cache: "no-store" })
+}
+
+export async function getEventRegistrations(eventId: string) {
+    return fetchWithAuth(`${API_EVENTS_URL}/api/events/${eventId}/registrations`, { cache: "no-store" })
+}
+
+export async function registerForEvent(eventId: string) {
+    // The API might expect a body or not. Swagger says body required EventRegistrationDTO but some endpoints auto-fill from token.
+    // /api/events/{eventId}/register -> EventRegistrationDTO required? 
+    // checking swagger schema for EventRegistrationDTO: required userEmail, userId, userName.
+    // Wait, if I am logged in, the backend should know who I am. 
+    // Let's assume the backend extracts user info from the token for /register, 
+    // BUT the swagger says requestBody is required.
+    // I will send empty object if not strict, or I might need to send my own data.
+    // If the backend requires me to send my own data, I need to get it from session.
+
+    // Actually, let's look closely at swagger:
+    // /api/events/{eventId}/register -> requestBody: EventRegistrationDTO
+    // This endpoint might be for "self registration" but badly designed if it asks for user ID/Email again.
+    // Or maybe it's just documented that way. 
+
+    // However, I will try sending the user data from session if I can, OR just empty object if the backend ignores it.
+    // Let's try sending the data to be safe.
+
+    const headers = await getAuthHeader()
+    // We need user details. 
+    // This is tricky in a generic function. 
+    // Use getSession/auth to get user details.
+    let user;
+    if (typeof window === "undefined") {
+        const session = await auth();
+        user = session?.user;
+    } else {
         const session = await getSession();
-        if (session?.user?.accessToken) {
-            config.headers.Authorization = `Bearer ${session.user.accessToken}`;
-        }
-        return config;
-    });
+        user = session?.user;
+    }
 
-    return api;
-};
+    if (!user) throw new Error("User not authenticated");
 
-export const userService = createApiClient(
-    process.env.NEXT_PUBLIC_USER_API_URL || 'http://localhost:8080/api'
-);
+    return fetchWithAuth(`${API_EVENTS_URL}/api/events/${eventId}/register`, {
+        method: "POST",
+        body: JSON.stringify({
+            userId: user.id, // we might not have ID in session if not added to callbacks
+            userEmail: user.email,
+            userName: user.name
+        })
+    })
+}
 
-export const eventsService = createApiClient(
-    process.env.NEXT_PUBLIC_EVENTS_API_URL || 'http://localhost:8081/api'
-);
+export async function markAttendance(registrationId: string, attended: boolean) {
+    return fetchWithAuth(`${API_EVENTS_URL}/api/registrations/${registrationId}/attendance`, {
+        method: "POST",
+        body: JSON.stringify({ attended }),
+    })
+}
 
-export const notificationService = createApiClient(
-    process.env.NEXT_PUBLIC_NOTIFICATION_API_URL || 'http://localhost:8082/api'
-);
+export async function adminRegisterUserByEmail(eventId: string, email: string) {
+    return fetchWithAuth(`${API_EVENTS_URL}/api/events/${eventId}/register-by-email`, {
+        method: "POST",
+        body: JSON.stringify({ email }),
+    })
+}
 
-export const certificateService = createApiClient(
-    process.env.NEXT_PUBLIC_CERTIFICATE_API_URL || 'http://localhost:8083/certificates'
-);
+export async function getMyRegistrations() {
+    return fetchWithAuth(`${API_EVENTS_URL}/api/my-events`, { cache: "no-store" })
+}
 
-export const logsService = createApiClient(
-    process.env.NEXT_PUBLIC_LOGS_API_URL || 'http://localhost:8084'
-);
+const API_USERS_URL = process.env.NEXT_PUBLIC_API_USERS_URL || "http://localhost:8080" // Fallback or env var
 
-// Base URL for certificate downloads
-export const certificateBaseUrl =
-    process.env.NEXT_PUBLIC_CERTIFICATE_API_BASE_URL || 'http://localhost:8083';
+export async function updateUser(data: { name?: string; document?: string; phone?: string }) {
+    return fetchWithAuth(`${API_USERS_URL}/api/users/me`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    })
+}
