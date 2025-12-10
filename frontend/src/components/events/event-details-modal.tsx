@@ -9,10 +9,11 @@ import { useState } from "react"
 // But wait, the prompt says "Use Next.js", "Vanilla CSS" (implied Tailwind).
 // I will creating a custom Modal to be safe.
 
+import { EventRegistrationResponseDTO } from "@/types/registrations"
 import { EventResponseDTO } from "@/types/events"
 import { Calendar, MapPin, Users, Info, X } from "lucide-react"
 import { useSession } from "next-auth/react"
-import { registerForEvent } from "@/lib/api"
+import { registerForEvent, cancelRegistration } from "@/lib/api"
 
 interface EventDetailsModalProps {
     event: EventResponseDTO | null
@@ -20,9 +21,10 @@ interface EventDetailsModalProps {
     onClose: () => void
     onUnregister?: () => void // Optional for future
     onOpenAttendance?: () => void
+    registration: EventRegistrationResponseDTO | null
 }
 
-export function EventDetailsModal({ event, isOpen, onClose, onOpenAttendance }: EventDetailsModalProps) {
+export function EventDetailsModal({ event, isOpen, onClose, onOpenAttendance, registration }: EventDetailsModalProps) {
     const { data: session } = useSession()
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -46,6 +48,7 @@ export function EventDetailsModal({ event, isOpen, onClose, onOpenAttendance }: 
             await registerForEvent(event!.id)
             setMessage({ type: 'success', text: 'Inscrição realizada com sucesso!' })
             // Maybe refresh data?
+            window.location.reload() // Simple reload to refresh state for now
         } catch (error: any) {
             // Checking if error message contains information about already registered
             if (error.message && error.message.includes("409")) {
@@ -53,6 +56,23 @@ export function EventDetailsModal({ event, isOpen, onClose, onOpenAttendance }: 
             } else {
                 setMessage({ type: 'error', text: 'Erro ao realizar inscrição. Tente novamente.' })
             }
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleCancel() {
+        if (!registration || !confirm("Tem certeza que deseja cancelar sua inscrição?")) return
+
+        setLoading(true)
+        setMessage(null)
+        try {
+            await cancelRegistration(registration.id)
+            setMessage({ type: 'success', text: 'Inscrição cancelada com sucesso!' })
+            window.location.reload() // Refresh to update state
+        } catch (error) {
+            console.error(error)
+            setMessage({ type: 'error', text: 'Erro ao cancelar inscrição.' })
         } finally {
             setLoading(false)
         }
@@ -122,6 +142,20 @@ export function EventDetailsModal({ event, isOpen, onClose, onOpenAttendance }: 
                             >
                                 Gerenciar Presenças
                             </button>
+                        ) : registration ? (
+                            registration.attended ? (
+                                <div className="px-5 py-2.5 rounded-lg bg-green-100 text-green-700 font-medium">
+                                    Presença Confirmada
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleCancel}
+                                    disabled={loading}
+                                    className="px-5 py-2.5 rounded-lg text-red-600 border border-red-200 font-medium hover:bg-red-50 transition-colors cursor-pointer"
+                                >
+                                    {loading ? "Cancelando..." : "Cancelar Inscrição"}
+                                </button>
+                            )
                         ) : (
                             <button
                                 onClick={handleRegister}

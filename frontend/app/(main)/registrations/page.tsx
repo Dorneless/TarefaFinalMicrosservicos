@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getMyRegistrations, generateCertificate } from "@/lib/api"
+import { getMyRegistrations, generateCertificate, cancelRegistration } from "@/lib/api"
 import { EventRegistrationResponseDTO } from "@/types/registrations"
 import { Loader2, Calendar, MapPin, CheckCircle, Clock, Download } from "lucide-react"
 import { format } from "date-fns"
@@ -24,6 +24,19 @@ export default function RegistrationsPage() {
             console.error("Failed to fetch registrations", error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    async function handleCancelRegistration(registrationId: string) {
+        if (!confirm("Tem certeza que deseja cancelar sua inscrição neste evento?")) return
+
+        try {
+            await cancelRegistration(registrationId)
+            alert("Inscrição cancelada com sucesso!")
+            fetchRegistrations() // Refresh list
+        } catch (error) {
+            console.error("Failed to cancel registration", error)
+            alert("Erro ao cancelar inscrição. Tente novamente.")
         }
     }
 
@@ -90,20 +103,30 @@ export default function RegistrationsPage() {
                                             )}
                                         </div>
 
-                                        {reg.attended && (
-                                            <button
-                                                onClick={() => handleGenerateCertificate(reg.eventId, reg.eventName)}
-                                                disabled={generatingCertId === reg.eventId}
-                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {generatingCertId === reg.eventId ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Download className="h-4 w-4" />
-                                                )}
-                                                Gerar Certificado
-                                            </button>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {!reg.attended && (
+                                                <button
+                                                    onClick={() => handleCancelRegistration(reg.id)}
+                                                    className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            )}
+                                            {reg.attended && (
+                                                <button
+                                                    onClick={() => handleGenerateCertificate(reg.eventId, reg.eventName)}
+                                                    disabled={generatingCertId === reg.eventId}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {generatingCertId === reg.eventId ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Download className="h-4 w-4" />
+                                                    )}
+                                                    Gerar Certificado
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

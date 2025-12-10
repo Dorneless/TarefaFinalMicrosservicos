@@ -110,6 +110,7 @@ export default function EventsPage() {
                     isOpen={isDetailsOpen}
                     onClose={() => setIsDetailsOpen(false)}
                     onOpenAttendance={handleOpenAttendance}
+                    registration={registrations.find(r => r.eventId === selectedEvent?.id) || null}
                 />
 
                 <AttendanceModal

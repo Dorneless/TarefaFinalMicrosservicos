@@ -141,6 +141,12 @@ export async function getMyCertificates() {
     return res
 }
 
+export async function cancelRegistration(registrationId: string) {
+    return fetchWithAuth(`${API_EVENTS_URL}/api/registrations/${registrationId}`, {
+        method: "DELETE",
+    })
+}
+
 export async function verifyCertificate(code: string) {
     // Public endpoint, no auth header needed?
     // Controller has NO @UseGuards on verifyCertificate?
