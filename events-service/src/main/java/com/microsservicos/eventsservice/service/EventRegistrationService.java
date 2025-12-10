@@ -28,6 +28,23 @@ public class EventRegistrationService {
     private final UserServiceClient userServiceClient;
 
     @Transactional
+    public EventRegistrationResponseDTO markAttendanceByEmail(UUID eventId, String email, AttendanceDTO attendanceDTO) {
+        EventRegistration registration = registrationRepository.findByEventIdAndUserEmail(eventId, email)
+                .orElseThrow(() -> new ResourceNotFoundException("Inscrição não encontrada para o email: " + email));
+
+        registration.setAttended(attendanceDTO.getAttended());
+        if (attendanceDTO.getAttended()) {
+            registration.setAttendedAt(LocalDateTime.now());
+        } else {
+            registration.setAttendedAt(null);
+        }
+
+        EventRegistration updatedRegistration = registrationRepository.save(registration);
+        Event event = eventRepository.findById(updatedRegistration.getEventId()).orElse(null);
+        return convertToResponseDTO(updatedRegistration, event);
+    }
+
+    @Transactional
     public EventRegistrationResponseDTO registerUserToEvent(UUID eventId, EventRegistrationDTO registrationDTO,
             String registeredByEmail) {
         Event event = eventRepository.findById(eventId)

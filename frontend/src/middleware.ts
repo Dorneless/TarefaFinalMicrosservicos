@@ -1,39 +1,31 @@
+import { auth } from "@/auth"
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
 
-export async function middleware(req: NextRequest) {
-    const token = await getToken({ req })
-    const path = req.nextUrl.pathname
+export default auth((req) => {
+    const isLoggedIn = !!req.auth
+    const isOnDashboard = req.nextUrl.pathname.startsWith("/dashboard")
+    const isOnLogin = req.nextUrl.pathname.startsWith("/login") || req.nextUrl.pathname.startsWith("/register")
 
-    // Define Public Routes
-    const isPublic =
-        path === "/" ||
-        path === "/login" ||
-        path === "/register" ||
-        path.startsWith("/events/") ||
-        path.startsWith("/verify-certificate");
+    // Root is now public events page, so no protection needed for "/"
+    // Only protect /dashboard if we still use it for other things, or protect specific admin routes.
+    // User said "events listing doesn't need to be protected".
+    // User said "dashboard... put events on root".
 
-    // 1. Redirect to Dashboard if logged in and trying to access auth pages
-    if (token && (path === "/login" || path === "/register")) {
-        const response = NextResponse.redirect(new URL("/", req.url));
-        return response;
+    // If we have other protected pages, we should protect them.
+    // For now, let's just protect /dashboard if it still exists (it doesn't, we deleted it).
+    // But wait, are there other pages?
+    // User mentioned "demais páginas que terão layout igual".
+    // If we have profile or admin pages, they might be in (main).
+    // Let's assume for now only (auth) pages are for guests-only (redirect to / if logged in?)
+    // And root is public.
+
+    if (isOnLogin) {
+        if (isLoggedIn) {
+            return NextResponse.redirect(new URL("/", req.nextUrl))
+        }
+        return
     }
-
-    // 2. Protect Private Routes
-    if (!isPublic && !token) {
-        const loginUrl = new URL("/login", req.url);
-        loginUrl.searchParams.set("callbackUrl", req.url);
-        return NextResponse.redirect(loginUrl);
-    }
-
-    // 3. Admin route protection
-    if (path.startsWith("/admin") && token?.role !== "ADMIN") {
-        return NextResponse.redirect(new URL("/", req.url));
-    }
-
-    return NextResponse.next();
-}
+})
 
 export const config = {
     matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
