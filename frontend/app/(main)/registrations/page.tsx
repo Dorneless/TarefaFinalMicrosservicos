@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getMyRegistrations, generateCertificate, cancelRegistration } from "@/lib/api"
+import { getMyRegistrations, generateCertificate, cancelRegistration, getMyCertificates, sendCertificateIssuedNotification } from "@/lib/api"
 import { EventRegistrationResponseDTO } from "@/types/registrations"
 import { Loader2, Calendar, MapPin, CheckCircle, Clock, Download } from "lucide-react"
 import { format } from "date-fns"
@@ -53,6 +53,26 @@ export default function RegistrationsPage() {
             a.click()
             window.URL.revokeObjectURL(url)
             document.body.removeChild(a)
+
+            // Send notification
+            // We need the certificate code. Fetch my certificates to find it.
+            try {
+                const certificates = await getMyCertificates()
+                const cert = certificates.find((c: any) => c.eventId === eventId)
+
+                if (cert) {
+                    await sendCertificateIssuedNotification({
+                        email: cert.userEmail,
+                        userName: cert.userName,
+                        eventName: cert.eventName,
+                        certificateCode: cert.code,
+                        pdfPath: ""
+                    })
+                }
+            } catch (err) {
+                console.error("Failed to send notification", err)
+            }
+
         } catch (error) {
             console.error("Failed to generate certificate", error)
             alert("Erro ao gerar certificado. Tente novamente.")

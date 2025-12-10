@@ -13,7 +13,7 @@ import { EventRegistrationResponseDTO } from "@/types/registrations"
 import { EventResponseDTO } from "@/types/events"
 import { Calendar, MapPin, Users, Info, X } from "lucide-react"
 import { useSession } from "next-auth/react"
-import { registerForEvent, cancelRegistration } from "@/lib/api"
+import { registerForEvent, cancelRegistration, sendEventRegistrationNotification, sendEventCancellationNotification } from "@/lib/api"
 
 interface EventDetailsModalProps {
     event: EventResponseDTO | null
@@ -46,6 +46,22 @@ export function EventDetailsModal({ event, isOpen, onClose, onOpenAttendance, re
         setMessage(null)
         try {
             await registerForEvent(event!.id)
+
+            // Send notification
+            if (session?.user?.email && session?.user?.name) {
+                try {
+                    await sendEventRegistrationNotification({
+                        name: session.user.name,
+                        email: session.user.email,
+                        eventName: event!.name,
+                        eventDate: new Date(event!.eventDate).toLocaleDateString("pt-BR"),
+                        eventLocation: event!.location || "Online"
+                    })
+                } catch (error) {
+                    console.error("Failed to send notification", error)
+                }
+            }
+
             setMessage({ type: 'success', text: 'Inscrição realizada com sucesso!' })
             // Maybe refresh data?
             window.location.reload() // Simple reload to refresh state for now
@@ -68,6 +84,21 @@ export function EventDetailsModal({ event, isOpen, onClose, onOpenAttendance, re
         setMessage(null)
         try {
             await cancelRegistration(registration.id)
+
+            // Send notification
+            if (session?.user?.email && session?.user?.name) {
+                try {
+                    await sendEventCancellationNotification({
+                        name: session.user.name,
+                        email: session.user.email,
+                        eventName: event!.name,
+                        eventDate: new Date(event!.eventDate).toLocaleDateString("pt-BR"),
+                    })
+                } catch (error) {
+                    console.error("Failed to send notification", error)
+                }
+            }
+
             setMessage({ type: 'success', text: 'Inscrição cancelada com sucesso!' })
             window.location.reload() // Refresh to update state
         } catch (error) {
