@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export default function ManageAttendancePage() {
@@ -98,16 +97,10 @@ export default function ManageAttendancePage() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
-            <Button variant="ghost" asChild={isOnline} className="mb-4 pl-0 hover:bg-transparent hover:text-primary">
-                {isOnline ? (
-                    <Link href={`/events/${params.id}`} className="flex items-center gap-2">
-                        <ArrowLeft className="h-4 w-4" /> Voltar para o Evento
-                    </Link>
-                ) : (
-                    <span onClick={() => window.location.href = `/events/${params.id}`} className="flex items-center gap-2 cursor-pointer">
-                        <ArrowLeft className="h-4 w-4" /> Voltar para o Evento
-                    </span>
-                )}
+            <Button variant="ghost" asChild className="mb-4 pl-0 hover:bg-transparent hover:text-primary">
+                <span onClick={() => window.location.href = `/events/${params.id}`} className="flex items-center gap-2 cursor-pointer">
+                    <ArrowLeft className="h-4 w-4" /> Voltar para o Evento
+                </span>
             </Button>
 
             <div>

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -42,79 +41,41 @@ export function Navbar() {
         <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
                 <div className="flex items-center flex-1">
-                    {isOnline ? (
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                                <Calendar className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                            <span className="hidden font-bold text-lg sm:inline-block">
-                                Gestor de Eventos
-                            </span>
-                        </Link>
-                    ) : (
-                        <span onClick={() => window.location.href = "/"} className="flex items-center space-x-2 cursor-pointer">
-                            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                                <Calendar className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                            <span className="hidden font-bold text-lg sm:inline-block">
-                                Gestor de Eventos
-                            </span>
+                    <span onClick={() => window.location.href = "/"} className="flex items-center space-x-2 cursor-pointer">
+                        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-primary-foreground" />
+                        </div>
+                        <span className="hidden font-bold text-lg sm:inline-block">
+                            Gestor de Eventos
                         </span>
-                    )}
+                    </span>
                 </div>
 
                 <nav className="hidden md:flex items-center justify-center space-x-6 text-sm font-medium">
                     {links.map((link) => (
-                        isOnline ? (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={cn(
-                                    "transition-colors hover:text-foreground/80 flex items-center gap-2",
-                                    pathname === link.href ? "text-primary font-semibold" : "text-foreground/60"
-                                )}
-                            >
-                                <link.icon className="h-4 w-4" />
-                                {link.label}
-                            </Link>
-                        ) : (
-                            <span
-                                key={link.href}
-                                onClick={() => window.location.href = link.href}
-                                className={cn(
-                                    "transition-colors hover:text-foreground/80 flex items-center gap-2 cursor-pointer",
-                                    pathname === link.href ? "text-primary font-semibold" : "text-foreground/60"
-                                )}
-                            >
-                                <link.icon className="h-4 w-4" />
-                                {link.label}
-                            </span>
-                        )
+                        <span
+                            key={link.href}
+                            onClick={() => window.location.href = link.href}
+                            className={cn(
+                                "transition-colors hover:text-foreground/80 flex items-center gap-2 cursor-pointer",
+                                pathname === link.href ? "text-primary font-semibold" : "text-foreground/60"
+                            )}
+                        >
+                            <link.icon className="h-4 w-4" />
+                            {link.label}
+                        </span>
                     ))}
                     {session?.user?.role === "ADMIN" && (
-                        isOnline ? (
-                            <Link
-                                href="/admin/logs"
-                                className={cn(
-                                    "transition-colors hover:text-foreground/80 flex items-center gap-2",
-                                    pathname === "/admin/logs" ? "text-primary font-semibold" : "text-foreground/60"
-                                )}
-                            >
-                                <ScrollText className="h-4 w-4" />
-                                Logs
-                            </Link>
-                        ) : (
-                            <span
-                                onClick={() => window.location.href = "/admin/logs"}
-                                className={cn(
-                                    "transition-colors hover:text-foreground/80 flex items-center gap-2 cursor-pointer",
-                                    pathname === "/admin/logs" ? "text-primary font-semibold" : "text-foreground/60"
-                                )}
-                            >
-                                <ScrollText className="h-4 w-4" />
-                                Logs
-                            </span>
-                        )
+                        <span
+                            onClick={() => window.location.href = "/admin/logs"}
+                            className={cn(
+                                "transition-colors hover:text-foreground/80 flex items-center gap-2 cursor-pointer",
+                                pathname === "/admin/logs" ? "text-primary font-semibold" : "text-foreground/60"
+                            )}
+                        >
+                            <ScrollText className="h-4 w-4" />
+                            Logs
+                        </span>
                     )}
                 </nav>
 
@@ -154,17 +115,10 @@ export function Navbar() {
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
-                                    {isOnline ? (
-                                        <Link href="/profile" className="cursor-pointer">
-                                            <UserCircle className="mr-2 h-4 w-4" />
-                                            <span>Perfil</span>
-                                        </Link>
-                                    ) : (
-                                        <span onClick={() => window.location.href = "/profile"} className="cursor-pointer flex items-center">
-                                            <UserCircle className="mr-2 h-4 w-4" />
-                                            <span>Perfil</span>
-                                        </span>
-                                    )}
+                                    <span onClick={() => window.location.href = "/profile"} className="cursor-pointer flex items-center">
+                                        <UserCircle className="mr-2 h-4 w-4" />
+                                        <span>Perfil</span>
+                                    </span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
                                     <LogOut className="mr-2 h-4 w-4" />
@@ -175,10 +129,10 @@ export function Navbar() {
                     ) : (
                         <div className="flex items-center gap-2">
                             <Button asChild variant="ghost" size="sm">
-                                {isOnline ? <Link href="/login">Entrar</Link> : <span onClick={() => window.location.href = "/login"} className="cursor-pointer">Entrar</span>}
+                                <span onClick={() => window.location.href = "/login"} className="cursor-pointer">Entrar</span>
                             </Button>
                             <Button asChild size="sm">
-                                {isOnline ? <Link href="/register">Cadastrar</Link> : <span onClick={() => window.location.href = "/register"} className="cursor-pointer">Cadastrar</span>}
+                                <span onClick={() => window.location.href = "/register"} className="cursor-pointer">Cadastrar</span>
                             </Button>
                         </div>
                     )}

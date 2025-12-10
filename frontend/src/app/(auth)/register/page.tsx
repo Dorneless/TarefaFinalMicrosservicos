@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import Link from "next/link";
 
 const formSchema = z.object({
     name: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }),

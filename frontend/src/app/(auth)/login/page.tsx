@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import Link from "next/link";
 import { userService } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { persister } from "@/lib/react-query";
@@ -211,7 +210,6 @@ export default function LoginPage() {
                 </CardContent>
                 <CardFooter className="flex justify-center">
                     <p className="text-sm text-gray-500">
-                        Não tem uma conta?{" "}
                         Não tem uma conta?{" "}
                         <span
                             onClick={() => window.location.href = "/register"}
